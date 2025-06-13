@@ -38,7 +38,7 @@ bot = commands.Bot(command_prefix='!', intents=intents)
 
 # --- !stats command ---
 @bot.command()
-async def stats(ctx, *, player_name):
+async def playerelo(ctx, *, player_name: str):
     try:
         values = rankings_sheet.get_all_values()
         headers = values[0]
