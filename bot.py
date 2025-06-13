@@ -93,4 +93,5 @@ async def h2h(ctx, *, names):
 
 
 # --- Bot Token ---
-bot.run("YOUR_DISCORD_BOT_TOKEN")
+import os
+bot.run(os.getenv("DISCORD_BOT_TOKEN"))
