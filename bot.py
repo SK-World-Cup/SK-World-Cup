@@ -103,7 +103,7 @@ async def auto_report_matches():
         last_reported_row = current_count
 
 # ——— Run the bot ———
-if __name__ == "__main__":
+    if __name__ == "__main__":
 import os
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
