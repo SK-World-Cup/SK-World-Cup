@@ -20,12 +20,14 @@ Thread(target=run_server, daemon=True).start()
 
 # --- Google Sheets Setup ---
 def setup_google_sheets():
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     gc = gspread.authorize(creds)
-    rankings_sheet = gc.open("1v1 Rankings").worksheet("Sheet1")
-    match_history_sheet = gc.open("1v1 Match History").worksheet ("1v1 Match History")
-    return rankings_sheet, match_history_sheet
+
+    sheet = gc.open("1v1 Rankings").sheet1
+    match_sheet = gc.open("1v1 Match History").worksheet("1v1 Match History")
+
+    return sheet, match_sheet
 
 rankings_sheet, match_history_sheet = setup_google_sheets()
 
@@ -69,43 +71,26 @@ async def stats(ctx, *, player_name):
 
 # --- !h2h command ---
 @bot.command()
-async def h2h(ctx, *, players):
+async def h2h(ctx, *, names):
     try:
-        player1, player2 = [p.strip().lower() for p in players.split("vs")]
-        all_matches = match_history_sheet.get_all_values()[1:]
+        name1, name2 = [n.strip() for n in names.split("vs")]
+        data = match_sheet.get_all_values()[1:]  # skip header
+        h2h_matches = [row for row in data if (row[0] == name1 and row[2] == name2) or (row[0] == name2 and row[2] == name1)]
+        
+        if not h2h_matches:
+            await ctx.send(f"No match history found between {name1} and {name2}.")
+            return
 
-        total_matches = 0
-        p1_wins = 0
-        p2_wins = 0
+        result_lines = []
+        for row in h2h_matches:
+            result_lines.append(f"{row[0]} {row[1]} {row[2]}")
 
-        for row in all_matches:
-            name1 = row[0].strip().lower()
-            score = row[1].strip()
-            name2 = row[2].strip().lower()
+        await ctx.send(f"📜 Match history between {name1} and {name2}:\n" + "\n".join(result_lines))
 
-            if (name1 == player1 and name2 == player2) or (name1 == player2 and name2 == player1):
-                total_matches += 1
-                s1, s2 = map(int, score.split("-"))
-
-                if name1 == player1 and s1 > s2:
-                    p1_wins += 1
-                elif name2 == player1 and s2 > s1:
-                    p1_wins += 1
-                else:
-                    p2_wins += 1
-
-        if total_matches == 0:
-            await ctx.send(f"No head-to-head history between {player1.title()} and {player2.title()}")
-        else:
-            await ctx.send(
-                f"🤜 Head-to-Head: {player1.title()} vs {player2.title()}\n"
-                f"📊 Total Matches: {total_matches}\n"
-                f"✅ {player1.title()} Wins: {p1_wins}\n"
-                f"✅ {player2.title()} Wins: {p2_wins}"
-            )
     except Exception as e:
-        await ctx.send("⚠️ An error occurred while retrieving match history.")
-        print(e)
+        await ctx.send("❌ Unexpected error occurred.")
+        print(f"Error in !h2h command: {e}")
+
 
 # --- Bot Token ---
 bot.run("YOUR_DISCORD_BOT_TOKEN")
