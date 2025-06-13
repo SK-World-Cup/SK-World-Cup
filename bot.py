@@ -24,7 +24,7 @@ def setup_google_sheets():
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     gc = gspread.authorize(creds)
     rankings_sheet = gc.open("1v1 Rankings").worksheet("Sheet1")
-    match_history_sheet = gc.open("1v1 Match History").1v1 Match History
+    match_history_sheet = gc.open("1v1 Match History").worksheet ("1v1 Match History")
     return rankings_sheet, match_history_sheet
 
 rankings_sheet, match_history_sheet = setup_google_sheets()
