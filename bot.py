@@ -104,5 +104,7 @@ async def auto_report_matches():
 
 # ——— Run the bot ———
 if __name__ == "__main__":
-    TOKEN = os.getenv("DISCORD_TOKEN")
-    bot.run(TOKEN)
+import os
+
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
+bot.run(TOKEN)
