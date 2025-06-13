@@ -23,8 +23,8 @@ def setup_google_sheets():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = ServiceAccountCredentials.from_json_keyfile_name("credentials.json", scope)
     gc = gspread.authorize(creds)
-    rankings_sheet = gc.open("SK Leaderboard").worksheet("1v1 Rankings")
-    match_history_sheet = gc.open("1v1 Match History").sheet1
+    rankings_sheet = gc.open("1v1 Rankings").worksheet("Sheet1")
+    match_history_sheet = gc.open("1v1 Match History").1v1 Match History
     return rankings_sheet, match_history_sheet
 
 rankings_sheet, match_history_sheet = setup_google_sheets()
