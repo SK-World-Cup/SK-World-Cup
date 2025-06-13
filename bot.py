@@ -35,6 +35,7 @@ match_ws  = match_ss.worksheet("1v1 Match History")
 
 # ——— Discord bot setup ———
 intents = discord.Intents.default()
+intents.message_content = True  # This is crucial!
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 # Will track how many rows we've already reported
