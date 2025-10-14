@@ -598,6 +598,65 @@ async def on_guild_join(guild):
 async def on_guild_remove(guild):
     """Event triggered when bot leaves a server"""
     print(f"👋 Left server: {guild.name} (ID: {guild.id})")
+    @bot.command(name='WHOSYOURDADDY')
+async def whos_your_daddy(ctx):
+    cursed_daddies = [
+        "A microwave that screams when you open it",
+        "A sock full of bees",
+        "The concept of regret",
+        "A sentient traffic cone named Greg",
+        "Your own reflection but angrier",
+        "A raccoon in a trench coat who pays taxes",
+        "The last USB port on Earth",
+        "A haunted Roomba that whispers Latin",
+        "A jar of pickles with unresolved trauma",
+        "The wind, but only when it’s inconvenient",
+        "A cursed Furby that knows your secrets",
+        "The guy who invented drywall",
+        "A Bluetooth speaker stuck on Nickelback",
+        "A goose with a vendetta",
+        "The smell of burnt toast at 3am",
+        "A VHS tape labeled 'DO NOT WATCH'",
+        "Your neighbor’s Wi-Fi router",
+        "A chair that screams when sat on",
+        "The word 'moist' in Comic Sans",
+        "A banana with a driver’s license",
+        "The last Pringle in the can",
+        "A ceiling fan that judges you",
+        "A toaster that only burns motivational quotes",
+        "The ghost of a forgotten password",
+        "A calculator that lies",
+        "A clown named Dennis who only appears during tax season",
+        "A cursed IKEA instruction manual",
+        "The echo of your worst decision",
+        "A fridge that gaslights you",
+        "A pigeon with a law degree",
+        "The sound of dial-up internet",
+        "A sentient pile of laundry",
+        "The last sip of warm milk",
+        "A kazoo possessed by ancient spirits",
+        "A USB stick full of eldritch screams",
+        "The concept of 'vibes' made flesh",
+        "A cursed emoji that blinks",
+        "A potato with a podcast",
+        "The feeling of stepping on LEGO",
+        "A blender that screams 'YEEHAW'",
+        "A cursed AI bot (not me... probably)",
+        "The last page of a cursed fanfic",
+        "A rubber duck with a criminal record",
+        "A traffic light that plays mind games",
+        "The word 'yeet' said backwards",
+        "A cursed spreadsheet cell named A666",
+        "The ghost of your unread emails",
+        "A sentient burrito with abandonment issues",
+        "The last brain cell during finals",
+        "A cursed kazoo that plays Rascal Flatts",
+        "A jar of mayonnaise that whispers 'father'"
+    ]
+
+    daddy = random.choice(cursed_daddies)
+    await ctx.send(f"🍼 Your daddy is: **{daddy}**")
+
 
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
