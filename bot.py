@@ -594,12 +594,10 @@ async def on_guild_join(guild):
     """Event triggered when bot joins a new server"""
     print(f"🎉 Joined new server: {guild.name} (ID: {guild.id})")
 
-@bot.event
-async def on_guild_remove(guild):
-    """Event triggered when bot leaves a server"""
-    print(f"👋 Left server: {guild.name} (ID: {guild.id})")
-    @bot.command(name='WHOSYOURDADDY')
+   @bot.command(name='WHOSYOURDADDY')
 async def whos_your_daddy(ctx):
+    import random
+
     cursed_daddies = [
         "A microwave that screams when you open it",
         "A sock full of bees",
@@ -656,7 +654,6 @@ async def whos_your_daddy(ctx):
 
     daddy = random.choice(cursed_daddies)
     await ctx.send(f"🍼 Your daddy is: **{daddy}**")
-
 
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
