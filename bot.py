@@ -594,7 +594,7 @@ async def on_guild_join(guild):
     """Event triggered when bot joins a new server"""
     print(f"🎉 Joined new server: {guild.name} (ID: {guild.id})")
 
-   @bot.command(name='WHOSYOURDADDY')
+@bot.command(name='WHOSYOURDADDY')
 async def whos_your_daddy(ctx):
     import random
 
