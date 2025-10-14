@@ -697,10 +697,6 @@ async def whos_your_daddy(ctx):
     daddy = random.choice(cursed_daddies)
     await ctx.send(f"🍼 Your daddy is: **{daddy}**")
 
-import random
-from discord.ext import commands
-
-bot = commands.Bot(command_prefix='!')
 
 @bot.command(name='moosecite')
 async def moosecite(ctx):
