@@ -749,7 +749,7 @@ async def moosecite(ctx):
             "I have citations — Moosehead, while being banned from the library for quoting TikTok",
             "I invented stairs — Moosehead, after falling down them in front of Kaity",
             "Banana = gun — Moosehead's TED Talk, moderated by Bunny (who left halfway through)",
-            "I'm 6'7" spiritually — Moosehead's Tinder bio, verified by LavaDragon's ghost",
+            "I’m 6'7\" spiritually - Moosehead's Tinder bio, verified by LavaDragon's ghost",
             "I once arm-wrestled a raccoon — Moosehead's campfire story, fact-checked by Scorpe",
             "I ghosted my therapist — Moosehead's mental health journey, narrated by Hope",
             "I taught dolphins to lie — Moosehead's marine biology thesis, peer-reviewed by Choooooooo1",
