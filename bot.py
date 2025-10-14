@@ -764,7 +764,7 @@ async def moosecite(ctx):
         '"I once got banned from a zoo for challenging a lemur to a duel" — Moosehead\'s wildlife blog',
         '"I\'m the reason your toaster has trust issues" — Moosehead\'s kitchen memoir',
         '"I once tried to teach algebra to a squirrel" — Moosehead\'s failed tutoring business',
-        '"I\'m the ghostwriter behind 3 cursed cookbooks" — Moosehead\'s culinary crimes",
+        '"I\'m the ghostwriter behind 3 cursed cookbooks" — Moosehead\'s culinary crimes"',
         '"I once got kicked out of a silent retreat for humming aggressively" — Moosehead\'s mindfulness journey',
         '"I\'m the reason your smart fridge is emotionally distant" — Moosehead\'s IoT sabotage confession',
         '"I once tried to summon vibes using a kazoo" — Moosehead\'s occult phase',
