@@ -691,10 +691,8 @@ async def whos_your_daddy(ctx):
         "The mafia boss who thought it would be fun to point a gun at his nuts and play russian roulette.",
         "LavaDragon, in which was shitting on the toliet for over a day before giving one last *fart* and exploding.",
         "Percy Jackson, the one that killed Kaity reading for the first time in his life",
-        "Moosehead, who thinks he's good at everything when in reality he's a bitch"
+        "Moosehead, who thinks he's good at everything when in reality he's a bitch."
 ]
-
-    ]
 
     daddy = random.choice(cursed_daddies)
     await ctx.send(f"🍼 Your daddy is: **{daddy}**")
