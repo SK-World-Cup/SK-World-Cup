@@ -697,6 +697,90 @@ async def whos_your_daddy(ctx):
     daddy = random.choice(cursed_daddies)
     await ctx.send(f"🍼 Your daddy is: **{daddy}**")
 
+import random
+from discord.ext import commands
+
+bot = commands.Bot(command_prefix='!')
+
+@bot.command(name='moosecite')
+async def moosecite(ctx):
+    citations = [
+        '"I have citations" — Moosehead, while being banned from the library for quoting TikTok',
+        '"I invented stairs" — Moosehead, after falling down them in front of Kaity',
+        '"Banana = gun" — Moosehead’s TED Talk, moderated by Bunny (who left halfway through)',
+        '"I’m 6’4” spiritually" — Moosehead’s Tinder bio, verified by LavaDragon’s ghost',
+        '"I once arm-wrestled a raccoon" — Moosehead’s campfire story, fact-checked by Scorpe',
+        '"I’m legally allowed to vibe" — Moosehead’s court testimony, defended by MrCuddlyWuddly Esq.',
+        '"I ghosted my therapist" — Moosehead’s mental health journey, narrated by Hope',
+        '"I taught dolphins to lie" — Moosehead’s marine biology thesis, peer-reviewed by Choooooooo1',
+        '"I’m the reason Pluto got demoted" — Moosehead’s astronomy blog, hacked by Vein',
+        '"I once tried to marry a traffic cone" — Moosehead’s legal history, officiated by Apophis',
+        '"I’m banned from 2 theme parks and one Chili’s" — Moosehead’s travel blog, co-authored by DinkyDecker',
+        '"I invented emotional damage" — Moosehead’s psychology thesis, plagiarized from Kat’s diary',
+        '"I once got detention for quoting Shrek" — Moosehead’s school record, witnessed by Kaity',
+        '"I’m the ghost of your unread emails" — Moosehead’s digital legacy, stored on Bunny’s cursed USB',
+        '"I once got kicked out of a Zoom call for being too real" — Moosehead’s remote work diary, leaked by LavaDragon',
+        '"I’m the final boss of bad takes" — Moosehead’s podcast intro, edited by Scorpe with regret',
+        '"I once tried to unionize pigeons" — Moosehead’s activism log, sabotaged by Vein for fun',
+        '"I’m the emotional support raccoon" — Moosehead’s therapy certification, revoked by MrCuddlyWuddly',
+        '"I once got banned from Discord for excessive vibes" — Moosehead’s mod appeal, denied by Kat',
+        '"I’m not toxic, I’m spicy" — Moosehead’s apology video, filmed by DinkyDecker in a Chili’s bathroom',
+        '"I once dated a cloud" — Moosehead’s autobiography, Chapter 7, illustrated by Hope',
+        '"The IRS is just a suggestion" — Moosehead during tax season, audited by Apophis',
+        '"I hacked a vending machine with vibes" — Moosehead’s tech startup pitch, stolen by Choooooooo1',
+        '"I once fought a goose for dominance" — Moosehead’s nature documentary, narrated by Bunny',
+        '"I’m emotionally unavailable but financially reckless" — Moosehead’s dating profile, reviewed by Kaity',
+        '"I taught a blender to scream" — Moosehead’s engineering portfolio, tested on LavaDragon’s kitchen',
+        '"I once got into a debate with a Roomba" — Moosehead’s memoir, ghostwritten by Scorpe',
+        '"I’m the spiritual successor to chaos" — Moosehead’s Wikipedia page, edited by Vein hourly',
+        '"I’m the CEO of bad decisions" — Moosehead’s business card, printed by MrCuddlyWuddly',
+        '"I once got kicked out of IKEA for roleplaying as a lamp" — Moosehead’s Yelp review, liked by Kat',
+        '"I’m banned from 3 libraries" — Moosehead’s academic record, archived by Apophis',
+        '"I’m the reason your Wi-Fi is slow" — Moosehead’s confession, intercepted by Choooooooo1',
+        '"I once dated a cloud" — Moosehead’s autobiography, Chapter 7, illustrated by Hope',
+        '"I’m legally allowed to vibe" — Moosehead’s court testimony, defended by MrCuddlyWuddly Esq.',
+        '"I ghosted my therapist" — Moosehead’s mental health journey, narrated by Hope',
+        '"I taught dolphins to lie" — Moosehead’s marine biology thesis, peer-reviewed by Choooooooo1',
+        '"I’m the reason Pluto got demoted" — Moosehead’s astronomy blog, hacked by Vein',
+        '"I once tried to marry a traffic cone" — Moosehead’s legal history, officiated by Apophis',
+        '"I’m banned from 2 theme parks and one Chili’s" — Moosehead’s travel blog, co-authored by DinkyDecker',
+        '"I once arm-wrestled a raccoon" — Moosehead’s campfire story, fact-checked by Scorpe',
+        '"I’m the ghost of your unread emails" — Moosehead’s digital legacy, stored on Bunny’s cursed USB',
+        '"I once got detention for quoting Shrek" — Moosehead’s school record, witnessed by Kaity',
+        '"I’m emotionally unavailable but financially reckless" — Moosehead’s dating profile, reviewed by Kaity',
+        '"I taught a blender to scream" — Moosehead’s engineering portfolio, tested on LavaDragon’s kitchen',
+        '"I once got into a debate with a Roomba" — Moosehead’s memoir, ghostwritten by Scorpe',
+        '"I’m the spiritual successor to chaos" — Moosehead’s Wikipedia page, edited by Vein hourly',
+        '"I once tried to unionize pigeons" — Moosehead’s activism log, sabotaged by Vein for fun',
+        '"I’m the emotional support raccoon" — Moosehead’s therapy certification, revoked by MrCuddlyWuddly',
+        '"I once got banned from Discord for excessive vibes" — Moosehead’s mod appeal, denied by Kat',
+        '"I once tried to high-five the moon" — Moosehead’s space exploration blog',
+        '"I’m banned from Google for knowing too much" — Moosehead’s tech resume',
+        '"I invented sarcasm in 2007" — Moosehead’s historical timeline',
+        '"I’m the reason cereal is dry" — Moosehead’s breakfast manifesto',
+        '"I once yelled at a cloud for looking smug" — Moosehead’s weather journal',
+        '"I legally changed my middle name to Chaos" — Moosehead’s birth certificate (probably)',
+        '"I taught my microwave to scream" — Moosehead’s home improvement vlog',
+        '"I’m the founder of the Church of Vibes" — Moosehead’s spiritual awakening",
+        '"I once got kicked out of a spelling bee for spelling ‘vibe’ with a 3" — Moosehead’s academic record',
+        '"I’m the reason your printer hates you" — Moosehead’s tech support confession',
+        '"I once tried to speedrun life" — Moosehead’s motivational poster",
+        '"I’m emotionally fluent in 7 types of regret" — Moosehead’s dating profile",
+        '"I once mistook a raccoon for my Uber" — Moosehead’s travel diary",
+        '"I’m the inventor of the phrase ‘oopsie rage’" — Moosehead’s psychology thesis",
+        '"I once got lost in IKEA and founded a civilization" — Moosehead’s anthropology paper",
+        '"I’m banned from 3 Discord servers and one medieval reenactment group" — Moosehead’s social resume",
+        '"I once tried to duel my reflection" — Moosehead’s self-help book",
+        '"I’m the reason your fridge light flickers" — Moosehead’s electrical engineering portfolio",
+        '"I once declared war on a vending machine" — Moosehead’s snack log",
+        '"I’m the ghost of bad decisions past" — Moosehead’s holiday special"
+]
+    ]
+
+    chosen = random.choice(citations)
+    await ctx.send(f"📚 Moosehead’s Citation:\n> {chosen}")
+
+
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
     # Get bot token from environment variables
