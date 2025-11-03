@@ -892,7 +892,7 @@ async def moosecite(ctx):
             "I once ate a crayon for emotional support — Moosehead’s artistic diet plan",
             "I once submitted an essay written entirely in screams — Moosehead’s literature degree",
             "I once mistook a smoke detector for an oracle — Moosehead’s prophecy awakening",
-             "I once tried to vibe-check Wi-Fi — Moosehead’s connectivity breakdown",
+            "I once tried to vibe-check Wi-Fi — Moosehead’s connectivity breakdown",
             "I once tried to sell NFTs of my regrets — Moosehead’s blockchain downfall",
             "I once mistook static on the radio for divine guidance — Moosehead’s spiritual crisis",
             "I once called tech support to fix my feelings — Moosehead’s emotional bug report",
