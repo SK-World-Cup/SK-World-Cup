@@ -514,7 +514,7 @@ async def on_ready():
     # Set bot activity status
     activity = discord.Activity(
         type=discord.ActivityType.watching,
-        name="1v1 rankings | !help_stats"
+        name="1v1 Rankings | !help_stats"
     )
     await bot.change_presence(activity=activity)
 
@@ -904,7 +904,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
         gc = gspread.authorize(creds)
 
         # Open the spreadsheet and select the "Match History" sheet
-        sh = gc.open("1v1 rankings")
+        sh = gc.open("1v1 Rankings")
         sheet = sh.worksheet("Match History")
 
         all_matches = sheet.get_all_values()[1:]  # skip header
