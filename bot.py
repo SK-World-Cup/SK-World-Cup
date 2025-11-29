@@ -879,6 +879,28 @@ async def moosecite(ctx):
     except Exception as e:
         await ctx.send(f"❌ Moosehead crashed: {str(e)}")
 
+@bot.command()
+async def gamesbyplayer(ctx, *, player_name: str):
+    """
+    Shows the last 20 games for a specific player.
+    Usage: !gamesbyplayer PlayerName
+    """
+    sheet = gc.open("1v1 Rankings").worksheet("Match History")
+    data = sheet.get_all_values()[1:]  # skip header
+
+    recent_games = []
+    for row in reversed(data):
+        if row[0].lower() == player_name.lower() or row[2].lower() == player_name.lower():
+            recent_games.append(f"{row[0]} {row[1]} {row[2]} [{row[3]}]")
+        if len(recent_games) == 20:
+            break
+
+    if not recent_games:
+        await ctx.send(f"No games found for {player_name}.")
+        return
+
+    await ctx.send(f"🎮 Last 20 Games for {player_name} (newest first):\n" + "\n".join(recent_games))
+
 
 
 # === MAIN EXECUTION ===
