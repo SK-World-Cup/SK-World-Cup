@@ -322,6 +322,8 @@ async def headtohead(ctx, player1=None, player2=None):
     """
     Display head-to-head match history between two players
     Usage: !headtohead <player1> <player2>
+    Reads the 'Match History' worksheet in the same spreadsheet as `sheet`.
+    Column A = Player 1, Column B = Score (format: X-Y), Column C = Player 2, Column D = Match ID (optional)
     """
     if not player1 or not player2:
         embed = discord.Embed(
@@ -331,8 +333,9 @@ async def headtohead(ctx, player1=None, player2=None):
         )
         await ctx.send(embed=embed)
         return
-    
-    if not gc:
+
+    # Ensure Google Sheets main connection is available
+    if not sheet:
         embed = discord.Embed(
             title="❌ Service Unavailable",
             description="Google Sheets connection is not available. Please try again later.",
@@ -340,196 +343,158 @@ async def headtohead(ctx, player1=None, player2=None):
         )
         await ctx.send(embed=embed)
         return
-    
+
+    # Normalize lookup strings for case-insensitive compare
+    p1_query = player1.strip().lower()
+    p2_query = player2.strip().lower()
+
     try:
-        # Send typing indicator
         async with ctx.typing():
+            # Try to open the "Match History" worksheet inside the same spreadsheet
             try:
-                # Access the separate match history spreadsheet
-                match_history_spreadsheet = gc.open("1v1 Match History")
-                
-                # Get the first worksheet or find a specific one
-                match_sheet = None
-                worksheets = match_history_spreadsheet.worksheets()
-                
-                # Try to find the main match history worksheet
-                for ws in worksheets:
-                    ws_name = ws.title.lower()
-                    if any(keyword in ws_name for keyword in ['sheet1', 'match', 'history', 'game', 'record']):
-                        match_sheet = ws
-                        break
-                
-                # If no specific sheet found, use the first one
-                if not match_sheet and worksheets:
-                    match_sheet = worksheets[0]
-                
-                if not match_sheet:
-                    embed = discord.Embed(
-                        title="❌ Match History Sheet Not Found",
-                        description="Could not find a match history worksheet in the '1v1 Match History' spreadsheet.",
-                        color=0xff0000
-                    )
-                    await ctx.send(embed=embed)
-                    return
-                
-                # Get all match data
-                # Column A = Player 1, Column B = Scores, Column C = Player 2
-                player1_col = match_sheet.col_values(1)[1:]  # Skip header
-                scores_col = match_sheet.col_values(2)[1:]   # Skip header  
-                player2_col = match_sheet.col_values(3)[1:]  # Skip header
-                
-                # Find matches between the two players
-                head_to_head_matches = []
-                
-                # Ensure all columns have the same length
-                min_length = min(len(player1_col), len(scores_col), len(player2_col))
-                
-                for i in range(min_length):
-                    p1 = str(player1_col[i]).strip() if i < len(player1_col) else ""
-                    score = str(scores_col[i]).strip() if i < len(scores_col) else ""
-                    p2 = str(player2_col[i]).strip() if i < len(player2_col) else ""
-                    
-                    # Check if this match involves both players
-                    if ((p1.lower() == player1.lower() and p2.lower() == player2.lower()) or
-                        (p1.lower() == player2.lower() and p2.lower() == player1.lower())):
-                        
-                        match_data = {
-                            'player1': p1,
-                            'score': score,
-                            'player2': p2,
-                            'row': i + 2  # +2 because we skipped header and are 0-indexed
-                        }
-                        head_to_head_matches.append(match_data)
-                
-                if not head_to_head_matches:
-                    embed = discord.Embed(
-                        title="🤷 No Matches Found",
-                        description=f"No head-to-head matches found between `{player1}` and `{player2}`.",
-                        color=0xffaa00
-                    )
-                    await ctx.send(embed=embed)
-                    return
-                
-                # Calculate wins
-                player1_wins = 0
-                player2_wins = 0
-                draws = 0
-                
-                for match in head_to_head_matches:
-                    score = match['score']
-                    match_p1 = match['player1']
-                    match_p2 = match['player2']
-                    
-                    # Parse score (assume format like "2-1", "3-0", etc.)
-                    if '-' in score:
-                        try:
-                            score_parts = score.split('-')
-                            score1 = int(score_parts[0].strip())
-                            score2 = int(score_parts[1].strip())
-                            
-                            # Determine winner based on who's in player1 position for this match
-                            if match_p1.lower() == player1.lower():
-                                # player1 is in first position
-                                if score1 > score2:
-                                    player1_wins += 1
-                                elif score2 > score1:
-                                    player2_wins += 1
-                                else:
-                                    draws += 1
-                            else:
-                                # player1 is in second position (player2 in data)
-                                if score2 > score1:
-                                    player1_wins += 1
-                                elif score1 > score2:
-                                    player2_wins += 1
-                                else:
-                                    draws += 1
-                        except (ValueError, IndexError):
-                            # Can't parse score, skip this match for win counting
-                            continue
-                
-                # Create embed
+                match_sheet = sheet.spreadsheet.worksheet("Match History")
+            except Exception:
+                # worksheet might not exist or access failed
                 embed = discord.Embed(
-                    title=f"⚔️ Head-to-Head: {player1} vs {player2}",
-                    description=f"**Overall Record:** {player1}: {player1_wins} - {player2}: {player2_wins}" + 
-                               (f" - Draws: {draws}" if draws > 0 else ""),
-                    color=0x0099ff
-                )
-                
-                # Add recent matches (limit to 10 most recent)
-                recent_matches = head_to_head_matches[-10:]  # Get last 10 matches
-                recent_matches.reverse()  # Show most recent first
-                
-                if recent_matches:
-                    match_history = ""
-                    for i, match in enumerate(recent_matches, 1):
-                        score = match['score']
-                        match_p1 = match['player1'] 
-                        match_p2 = match['player2']
-                        
-                        # Determine winner for display
-                        winner = "Draw"
-                        if '-' in score:
-                            try:
-                                score_parts = score.split('-')
-                                score1 = int(score_parts[0].strip())
-                                score2 = int(score_parts[1].strip())
-                                
-                                if score1 > score2:
-                                    winner = match_p1
-                                elif score2 > score1:
-                                    winner = match_p2
-                            except (ValueError, IndexError):
-                                winner = "N/A"
-                        
-                        match_info = f"**{i}.** {match_p1} vs {match_p2} - {score}"
-                        if winner != "N/A":
-                            match_info += f" (Winner: **{winner}**)"
-                        match_info += "\n"
-                        
-                        match_history += match_info
-                    
-                    embed.add_field(
-                        name="📋 Recent Matches",
-                        value=match_history,
-                        inline=False
-                    )
-                
-                # Add statistics
-                total_matches = player1_wins + player2_wins + draws
-                if total_matches > 0:
-                    player1_winrate = (player1_wins / total_matches) * 100
-                    player2_winrate = (player2_wins / total_matches) * 100
-                    
-                    embed.add_field(
-                        name="📊 Win Rates",
-                        value=f"{player1}: {player1_winrate:.1f}%\n{player2}: {player2_winrate:.1f}%",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="🎮 Total Matches",
-                        value=str(total_matches),
-                        inline=True
-                    )
-                
-                embed.set_footer(text="Data from match history spreadsheet")
-                await ctx.send(embed=embed)
-                
-            except Exception as sheet_error:
-                print(f"❌ Match history sheet error: {str(sheet_error)}")
-                embed = discord.Embed(
-                    title="❌ Match History Access Error",
-                    description="Could not access match history data. Make sure the match history sheet exists.",
+                    title="❌ Match History Sheet Not Found",
+                    description="Could not find a worksheet named `Match History` in the 1v1 Rankings spreadsheet.",
                     color=0xff0000
                 )
                 embed.add_field(
                     name="💡 Expected Format",
-                    value="Column A: Player 1\nColumn B: Scores (format: 2-1)\nColumn C: Player 2",
+                    value="Sheet: `Match History`\nColumn A: Player 1\nColumn B: Score (e.g. 2-1)\nColumn C: Player 2\nColumn D: Match ID (optional)",
                     inline=False
                 )
                 await ctx.send(embed=embed)
-                
+                return
+
+            # Read columns (skip header row)
+            col_a = match_sheet.col_values(1)[1:]  # Player A
+            col_b = match_sheet.col_values(2)[1:]  # Score
+            col_c = match_sheet.col_values(3)[1:]  # Player B
+            col_d = match_sheet.col_values(4)[1:] if len(match_sheet.col_values(4)) > 1 else []
+
+            min_length = min(len(col_a), len(col_b), len(col_c))
+            if min_length == 0:
+                embed = discord.Embed(
+                    title="🤷 No Match Data",
+                    description="No match history data found in the Match History sheet.",
+                    color=0xffaa00
+                )
+                await ctx.send(embed=embed)
+                return
+
+            # Collect matches where both players were involved (either side)
+            head_to_head_matches = []
+            for i in range(min_length):
+                row_p1 = str(col_a[i]).strip()
+                row_score = str(col_b[i]).strip()
+                row_p2 = str(col_c[i]).strip()
+                row_id = col_d[i].strip() if i < len(col_d) else ""
+
+                # Standardize for comparisons
+                row_p1_l = row_p1.lower()
+                row_p2_l = row_p2.lower()
+
+                # Check if this row involves both queried players
+                if ((row_p1_l == p1_query and row_p2_l == p2_query) or
+                    (row_p1_l == p2_query and row_p2_l == p1_query)):
+                    head_to_head_matches.append({
+                        "row": i + 2,  # +2 because we skipped header and lists are 0-indexed
+                        "player_a": row_p1,
+                        "score": row_score,
+                        "player_b": row_p2,
+                        "match_id": row_id
+                    })
+
+            if not head_to_head_matches:
+                embed = discord.Embed(
+                    title="🤷 No Matches Found",
+                    description=f"No head-to-head matches found between `{player1}` and `{player2}`.",
+                    color=0xffaa00
+                )
+                await ctx.send(embed=embed)
+                return
+
+            # Calculate W/L/D
+            player1_wins = 0
+            player2_wins = 0
+            draws = 0
+
+            for match in head_to_head_matches:
+                score = match["score"]
+                ma = match["player_a"]
+                mb = match["player_b"]
+
+                # Determine numeric scores if possible
+                if "-" in score:
+                    try:
+                        left, right = score.split("-", 1)
+                        left_score = int(left.strip())
+                        right_score = int(right.strip())
+
+                        # Map which side corresponds to the original player1 query
+                        if ma.lower() == p1_query:
+                            # player1 is on left side of score
+                            if left_score > right_score:
+                                player1_wins += 1
+                            elif right_score > left_score:
+                                player2_wins += 1
+                            else:
+                                draws += 1
+                        else:
+                            # player1 is on right side of score
+                            if right_score > left_score:
+                                player1_wins += 1
+                            elif left_score > right_score:
+                                player2_wins += 1
+                            else:
+                                draws += 1
+                    except Exception:
+                        # If parsing fails, skip win-counting for this match
+                        continue
+                else:
+                    # Non-standard score format: skip counting wins but still display match
+                    continue
+
+            # Prepare embed summary
+            embed = discord.Embed(
+                title=f"⚔️ Head-to-Head: {player1} vs {player2}",
+                description=f"**Record** — {player1}: {player1_wins} | {player2}: {player2_wins}" +
+                            (f" | Draws: {draws}" if draws > 0 else ""),
+                color=0x0099ff
+            )
+
+            # Show most recent 10 matches (from sheet order: oldest->newest, so take last 10)
+            recent = head_to_head_matches[-10:]
+            recent.reverse()  # show newest first
+
+            match_lines = ""
+            for idx, m in enumerate(recent, 1):
+                mid = f" [{m['match_id']}]" if m.get("match_id") else ""
+                match_lines += f"**{idx}.** {m['player_a']} {m['score']} {m['player_b']}{mid}\n"
+
+            if match_lines:
+                embed.add_field(name="📋 Recent Matches (newest first)", value=match_lines, inline=False)
+
+            total = player1_wins + player2_wins + draws
+            if total > 0:
+                p1_winrate = (player1_wins / total) * 100
+                p2_winrate = (player2_wins / total) * 100
+                embed.add_field(
+                    name="📊 Win Rates",
+                    value=f"{player1}: {p1_winrate:.1f}%\n{player2}: {p2_winrate:.1f}%",
+                    inline=True
+                )
+                embed.add_field(
+                    name="🎮 Total Matches Counted",
+                    value=str(total),
+                    inline=True
+                )
+
+            embed.set_footer(text="Match history from 'Match History' tab")
+            await ctx.send(embed=embed)
+
     except Exception as e:
         print(f"❌ Error in headtohead command: {str(e)}")
         embed = discord.Embed(
