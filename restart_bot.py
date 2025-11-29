@@ -3,7 +3,7 @@ import requests
 
 # Get the API key and service ID from environment variables
 API_KEY = os.environ.get("API_KEY")  # your Render API key
-SERVICE_ID = os.environ.get("SERVICE_ID")  # the ID of your Render service
+SERVICE_ID = os.environ.get("srv-d15p1a7diees73ebbis0")  # the ID of your Render service
 
 if not API_KEY or not SERVICE_ID:
     print("❌ Missing API_KEY or SERVICE_ID environment variable.")
