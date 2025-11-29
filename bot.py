@@ -889,11 +889,16 @@ async def gamesbyplayer(ctx, *, player_name: str):
     import json
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
+    import traceback
 
     try:
         # Set up Google Sheets credentials from environment variable
         scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-        creds_json = os.environ["GOOGLE_CREDS_JSON"]
+        creds_json = os.environ.get("GOOGLE_CREDS_JSON")
+        if not creds_json:
+            await ctx.send("❌ GOOGLE_CREDS_JSON environment variable not found.")
+            return
+
         creds_dict = json.loads(creds_json)
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
         gc = gspread.authorize(creds)
@@ -925,7 +930,9 @@ async def gamesbyplayer(ctx, *, player_name: str):
         await ctx.send("\n".join(msg_lines))
 
     except Exception as e:
-        await ctx.send(f"❌ Command Error: {e}")
+        # Send full traceback for debugging
+        tb = traceback.format_exc()
+        await ctx.send(f"❌ Command Error:\n```{str(e)}\n\n{tb}```")
 
 
 
