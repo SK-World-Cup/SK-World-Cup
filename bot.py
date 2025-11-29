@@ -890,6 +890,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
     import traceback
+    import discord
 
     try:
         # Set up Google Sheets credentials from environment variable
@@ -922,12 +923,20 @@ async def gamesbyplayer(ctx, *, player_name: str):
             await ctx.send(f"❌ No matches found for player `{player_name}`.")
             return
 
-        msg_lines = [f"🎮 Last {len(recent_matches)} games for **{player_name}**:"]
-        for i, match in enumerate(recent_matches, 1):
-            player_a, score, player_b, match_id = match
-            msg_lines.append(f"{i}. {player_a} {score} {player_b} [{match_id}]")
+        embed = discord.Embed(
+            title=f"🎮 Last {len(recent_matches)} games for {player_name}",
+            color=discord.Color.blue()
+        )
 
-        await ctx.send("\n".join(msg_lines))
+        for match in recent_matches:
+            player_a, score, player_b, match_id = match
+            embed.add_field(
+                name=f"Match {match_id}",
+                value=f"**{player_a}** {score} **{player_b}**",
+                inline=False
+            )
+
+        await ctx.send(embed=embed)
 
     except Exception as e:
         # Send full traceback for debugging
