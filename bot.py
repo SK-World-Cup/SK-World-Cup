@@ -882,30 +882,47 @@ async def moosecite(ctx):
 @bot.command()
 async def gamesbyplayer(ctx, *, player_name: str):
     """
-    Shows the last 20 games for a specific player.
-    Usage: !gamesbyplayer PlayerName
+    Shows the last 20 games for a given player.
+    Usage: !gamesbyplayer <player_name>
     """
+    import os
+    import json
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+
     try:
-        sheet = gc.open("1v1 Rankings").worksheet("Match History")
-        data = sheet.get_all_values()[1:]  # skip header
+        # Set up Google Sheets credentials from environment variable
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds_json = os.environ["GOOGLE_CREDS_JSON"]
+        creds_dict = json.loads(creds_json)
+        creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        gc = gspread.authorize(creds)
 
-        recent_games = []
-        for row in reversed(data):
-            if len(row) < 4:
-                continue  # skip incomplete rows
-            if row[0].lower() == player_name.lower() or row[2].lower() == player_name.lower():
-                recent_games.append(f"{row[0]} {row[1]} {row[2]} [{row[3]}]")
-            if len(recent_games) == 20:
-                break
+        # Open the spreadsheet and select the "Match History" sheet
+        sh = gc.open("1v1 rankings")
+        sheet = sh.worksheet("Match History")
 
-        if not recent_games:
-            await ctx.send(f"No games found for {player_name}.")
+        all_matches = sheet.get_all_values()[1:]  # skip header
+        filtered_matches = []
+
+        # Search both Player A (col 0) and Player B (col 2)
+        for row in all_matches:
+            if player_name.lower() in row[0].lower() or player_name.lower() in row[2].lower():
+                filtered_matches.append(row)
+
+        # Take the 20 most recent
+        recent_matches = filtered_matches[-20:][::-1]  # newest first
+
+        if not recent_matches:
+            await ctx.send(f"❌ No matches found for player `{player_name}`.")
             return
 
-        # Split into multiple messages if too long
-        message = f"🎮 Last 20 Games for {player_name} (newest first):\n" + "\n".join(recent_games)
-        for chunk in [message[i:i+1900] for i in range(0, len(message), 1900)]:
-            await ctx.send(chunk)
+        msg_lines = [f"🎮 Last {len(recent_matches)} games for **{player_name}**:"]
+        for i, match in enumerate(recent_matches, 1):
+            player_a, score, player_b, match_id = match
+            msg_lines.append(f"{i}. {player_a} {score} {player_b} [{match_id}]")
+
+        await ctx.send("\n".join(msg_lines))
 
     except Exception as e:
         await ctx.send(f"❌ Command Error: {e}")
