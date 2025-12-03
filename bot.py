@@ -1030,6 +1030,94 @@ async def doadmin(ctx):
         await ctx.send("❌ Error accessing Pending Registrations sheet.")
         print(f"Error in doadmin: {e}")
 
+@bot.command(name="report")
+async def report(ctx, player1=None, score=None, player2=None):
+    """
+    Report a match result between two players.
+    Usage: !report <player1> <score> <player2>
+    Example: !report Tater 2-1 Moose
+    """
+    if not player1 or not score or not player2:
+        await ctx.send("❌ Usage: `!report <player1> <score> <player2>`")
+        return
+
+    try:
+        # Get the Match History worksheet
+        match_sheet = sheet.spreadsheet.worksheet("Match History")
+
+        # Find the first empty row
+        next_row = len(match_sheet.get_all_values()) + 1
+
+        # Write Player1 (col A), Score (col B), Player2 (col C)
+        match_sheet.update(f"A{next_row}", player1)
+        match_sheet.update(f"B{next_row}", score)
+        match_sheet.update(f"C{next_row}", player2)
+
+        # Look up registrations to see if we can ping anyone
+        reg_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
+        regs = reg_sheet.get_all_records()
+
+        mentions = []
+        for reg in regs:
+            if reg["Status"] == "Accepted":
+                if reg["Requested Name"].lower() == player1.lower():
+                    user = await bot.fetch_user(int(reg["Discord ID"]))
+                    mentions.append(user.mention)
+                if reg["Requested Name"].lower() == player2.lower():
+                    user = await bot.fetch_user(int(reg["Discord ID"]))
+                    mentions.append(user.mention)
+
+        mention_text = " ".join(mentions) if mentions else ""
+        await ctx.send(f"{mention_text}\n**{player1} {score} {player2}** reported by {ctx.author.mention}")
+
+    except Exception as e:
+        await ctx.send("❌ Error saving match report.")
+        print(f"Error in !report: {e}")
+
+@bot.command(name="reviewreports")
+async def reviewreports(ctx):
+    if ctx.author.id != OWNER_ID:
+        await ctx.send("❌ You don’t have permission to run this command.")
+        return
+
+    try:
+        match_sheet = sheet.spreadsheet.worksheet("Match History")
+        rows = match_sheet.get_all_records()
+
+        if not rows:
+            await ctx.send("📭 No match reports to review.")
+            return
+
+        for i, reg in enumerate(rows, start=2):  # start=2 because row 1 is headers
+            player1 = reg["Player 1"]
+            score = reg["Score"]
+            player2 = reg["Player 2"]
+
+            await ctx.send(
+                f"📋 Reported match: **{player1} {score} {player2}**\n"
+                f"Type `1` to accept or `2` to deny (delete)."
+            )
+
+            def check(m):
+                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+
+            try:
+                reply = await bot.wait_for("message", check=check, timeout=60.0)
+                if reply.content == "1":
+                    await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
+                    # Do nothing — row stays in sheet
+                else:
+                    match_sheet.delete_rows(i)
+                    await ctx.send(f"❌ Denied match: {player1} {score} {player2} (row deleted)")
+            except asyncio.TimeoutError:
+                await ctx.send("⏳ Timeout — moving to next report.")
+
+        await ctx.send("📋 All match reports processed.")
+
+    except Exception as e:
+        await ctx.send("❌ Error accessing Match History sheet.")
+        print(f"Error in reviewreports: {e}")
+
 
 
 # === MAIN EXECUTION ===
