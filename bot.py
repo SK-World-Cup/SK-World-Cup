@@ -947,7 +947,6 @@ async def gamesbyplayer(ctx, *, player_name: str):
 
 # === GLOBALS ===
 OWNER_ID = 1035911200237699072  # replace with your actual Discord user ID
-pending_registrations = []      # list to store registration requests
 
 # === COMMANDS ===
 @bot.command(name="register")
@@ -966,8 +965,8 @@ async def register(ctx):
         # Append to Google Sheet
         try:
             pending_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
-            # Write into row B (row 2 onward, under headers)
-            pending_sheet.append_row([ctx.author.id, requested_name, "Pending"])
+            # Force Discord ID to string so Sheets stores it as text
+            pending_sheet.append_row([str(ctx.author.id), requested_name, "Pending"])
             await reply.channel.send("✅ Your registration has been saved and will be reviewed.")
         except Exception as e:
             await reply.channel.send("❌ Failed to save registration. Please try again later.")
@@ -1000,13 +999,11 @@ async def doadmin(ctx):
             if status != "Pending":
                 continue
 
-            user = ctx.guild.get_member(int(discord_id))
+            # 🔑 This is where your block fits
+            discord_id = int(discord_id)  # cast back to int for Discord
+            user = ctx.guild.get_member(discord_id)
             if not user:
-                try:
-                    user = await bot.fetch_user(int(discord_id))
-                except Exception:
-                    await ctx.send(f"⚠️ Could not resolve user ID {discord_id}.")
-                    continue
+                user = await bot.fetch_user(discord_id)
 
             await ctx.send(
                 f"{user.mention} is registering for **{requested_name}**.\n"
