@@ -935,8 +935,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
             embed.add_field(
                 name=f"Match {match_id}",
                 value=f"**{player_a}** {score} **{player_b}**",
-                inline=False,
-                name=f"Pending {pending}",
+                inline=False
             )
 
         await ctx.send(embed=embed)
