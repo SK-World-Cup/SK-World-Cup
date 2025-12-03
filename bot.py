@@ -7,6 +7,9 @@ import json
 from flask import Flask
 from threading import Thread
 
+OWNER_ID = 1035911200237699072 
+pending_registrations = []
+
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
 
@@ -943,10 +946,11 @@ async def gamesbyplayer(ctx, *, player_name: str):
         tb = traceback.format_exc()
         await ctx.send(f"❌ Command Error:\n```{str(e)}\n\n{tb}```")
 
-# === REGISTRATION SYSTEM ===
-pending_registrations = []  # store requests until admin reviews
-OWNER_ID = 1035911200237699072  # replace with your Discord ID
+# === GLOBALS ===
+OWNER_ID = 1035911200237699072  # replace with your actual Discord user ID
+pending_registrations = []      # list to store registration requests
 
+# === COMMANDS ===
 @bot.command(name="register")
 async def register(ctx):
     """Start registration by DMing the user"""
@@ -957,7 +961,7 @@ async def register(ctx):
 
 @bot.event
 async def on_message(message):
-    # Handle DM replies for registration
+    """Listen for DM replies and store pending registrations"""
     if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
         pending_registrations.append({
             "discord_id": message.author.id,
@@ -969,7 +973,7 @@ async def on_message(message):
 @bot.command(name="doadmin")
 async def doadmin(ctx):
     """Admin reviews pending registrations"""
-    if ctx.author.id != OWNER_ID 1035911200237699072
+    if ctx.author.id != OWNER_ID:
         await ctx.send("❌ You don’t have permission to run this command.")
         return
 
