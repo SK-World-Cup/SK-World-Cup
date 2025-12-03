@@ -969,7 +969,7 @@ async def on_message(message):
 @bot.command(name="doadmin")
 async def doadmin(ctx):
     """Admin reviews pending registrations"""
-    if ctx.author.id != OWNER_ID:1035911200237699072
+    if ctx.author.id != OWNER_ID 1035911200237699072
         await ctx.send("❌ You don’t have permission to run this command.")
         return
 
