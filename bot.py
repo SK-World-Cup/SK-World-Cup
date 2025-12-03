@@ -931,7 +931,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
         )
 
         for match in recent_matches:
-            player_a, score, player_b, match_id = match
+            player_a, score, player_b, match_id = match, pending
             embed.add_field(
                 name=f"Match {match_id}",
                 value=f"**{player_a}** {score} **{player_b}**",
