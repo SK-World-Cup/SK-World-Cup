@@ -943,6 +943,64 @@ async def gamesbyplayer(ctx, *, player_name: str):
         tb = traceback.format_exc()
         await ctx.send(f"❌ Command Error:\n```{str(e)}\n\n{tb}```")
 
+# === REGISTRATION SYSTEM ===
+pending_registrations = []  # store requests until admin reviews
+OWNER_ID = 1035911200237699072  # replace with your Discord ID
+
+@bot.command(name="register")
+async def register(ctx):
+    """Start registration by DMing the user"""
+    try:
+        await ctx.author.send("👋 What player name are you registering for?")
+    except discord.Forbidden:
+        await ctx.send(f"{ctx.author.mention}, I couldn’t DM you. Please enable DMs.")
+
+@bot.event
+async def on_message(message):
+    # Handle DM replies for registration
+    if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
+        pending_registrations.append({
+            "discord_id": message.author.id,
+            "requested_name": message.content.strip()
+        })
+        await message.channel.send("✅ Your registration will be reviewed by the admin.")
+    await bot.process_commands(message)
+
+@bot.command(name="doadmin")
+async def doadmin(ctx):
+    """Admin reviews pending registrations"""
+    if ctx.author.id != OWNER_ID:1035911200237699072
+        await ctx.send("❌ You don’t have permission to run this command.")
+        return
+
+    if not pending_registrations:
+        await ctx.send("📭 No pending registrations.")
+        return
+
+    # Process each pending registration interactively
+    for reg in pending_registrations[:]:
+        user = ctx.guild.get_member(reg["discord_id"])
+        await ctx.send(
+            f"{user.mention} is registering for **{reg['requested_name']}**.\n"
+            f"Type `1` to accept or `2` to deny."
+        )
+
+        def check(m):
+            return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+
+        try:
+            reply = await bot.wait_for("message", check=check, timeout=60.0)
+            if reply.content == "1":
+                # TODO: add to your Google Sheet or local DB
+                await ctx.send(f"✅ Accepted {user.mention} as '{reg['requested_name']}'")
+            else:
+                await ctx.send(f"❌ Denied registration for {user.mention}")
+            pending_registrations.remove(reg)
+        except asyncio.TimeoutError:
+            await ctx.send("⏳ Timeout — moving to next request.")
+
+    await ctx.send("📋 All commands processed.")
+
 
 
 # === MAIN EXECUTION ===
