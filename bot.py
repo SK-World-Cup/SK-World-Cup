@@ -936,6 +936,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
                 name=f"Match {match_id}",
                 value=f"**{player_a}** {score} **{player_b}**",
                 inline=False
+                name=f"Pending {pending}",
             )
 
         await ctx.send(embed=embed)
