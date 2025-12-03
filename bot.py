@@ -1042,21 +1042,18 @@ async def report(ctx, player1=None, score=None, player2=None):
         return
 
     try:
-        # Get the Match History worksheet
         match_sheet = sheet.spreadsheet.worksheet("Match History")
-
-        # Find the first empty row
         next_row = len(match_sheet.get_all_values()) + 1
 
-        # Write Player1 (col A), Score (col B), Player2 (col C)
+        # Write Player1 (A), Score (B), Player2 (C), mark Pending (E)
         match_sheet.update(f"A{next_row}", player1)
         match_sheet.update(f"B{next_row}", score)
         match_sheet.update(f"C{next_row}", player2)
+        match_sheet.update(f"E{next_row}", "Pending")
 
-        # Look up registrations to see if we can ping anyone
+        # Mentions if registered
         reg_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
         regs = reg_sheet.get_all_records()
-
         mentions = []
         for reg in regs:
             if reg["Status"] == "Accepted":
