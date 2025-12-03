@@ -1103,15 +1103,15 @@ async def reviewreports(ctx):
 
             await ctx.send(
                 f"📋 Reported match: **{player1} {score} {player2}**\n"
-                f"Type `yes` to accept or `no` to deny (delete)."
+                f"Type `1` to accept (mark Yes) or `2` to deny (delete)."
             )
 
             def check(m):
-                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content.lower() in ["yes", "no"]
+                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
 
             try:
                 reply = await bot.wait_for("message", check=check, timeout=60.0)
-                if reply.content.lower() == "yes":
+                if reply.content == "1":
                     match_sheet.update_cell(i, 5, "Yes")  # Column E = Pending
                     await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
                 else:
