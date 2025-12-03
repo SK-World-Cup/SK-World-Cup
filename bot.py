@@ -1092,27 +1092,32 @@ async def reviewreports(ctx):
             player1 = reg["Player 1"]
             score = reg["Score"]
             player2 = reg["Player 2"]
+            pending = reg.get("Pending", "")
+
+            # 🔑 Only review rows marked Pending
+            if pending.lower() != "pending":
+                continue
 
             await ctx.send(
                 f"📋 Reported match: **{player1} {score} {player2}**\n"
-                f"Type `1` to accept or `2` to deny (delete)."
+                f"Type `yes` to accept or `no` to deny (delete)."
             )
 
             def check(m):
-                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content.lower() in ["yes", "no"]
 
             try:
                 reply = await bot.wait_for("message", check=check, timeout=60.0)
-                if reply.content == "1":
+                if reply.content.lower() == "yes":
+                    match_sheet.update_cell(i, 5, "Yes")  # Column E = Pending/Review Status
                     await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
-                    # Do nothing — row stays in sheet
                 else:
                     match_sheet.delete_rows(i)
                     await ctx.send(f"❌ Denied match: {player1} {score} {player2} (row deleted)")
             except asyncio.TimeoutError:
                 await ctx.send("⏳ Timeout — moving to next report.")
 
-        await ctx.send("📋 All match reports processed.")
+        await ctx.send("📋 All pending match reports processed.")
 
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
