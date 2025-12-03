@@ -1088,7 +1088,7 @@ async def reviewreports(ctx):
             await ctx.send("📭 No match reports to review.")
             return
 
-        for i, reg in enumerate(rows, start=2):  # start=2 because row 1 is headers
+        for i, reg in enumerate(rows, start=2):  # row 1 is headers
             player1 = reg["Player 1"]
             score = reg["Score"]
             player2 = reg["Player 2"]
@@ -1109,7 +1109,7 @@ async def reviewreports(ctx):
             try:
                 reply = await bot.wait_for("message", check=check, timeout=60.0)
                 if reply.content.lower() == "yes":
-                    match_sheet.update_cell(i, 5, "Yes")  # Column E = Pending/Review Status
+                    match_sheet.update_cell(i, 5, "Yes")  # Column E = Pending
                     await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
                 else:
                     match_sheet.delete_rows(i)
