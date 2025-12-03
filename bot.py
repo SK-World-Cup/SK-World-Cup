@@ -8,7 +8,6 @@ from flask import Flask
 from threading import Thread
 
 OWNER_ID = 1035911200237699072 
-pending_registrations = []
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
@@ -953,57 +952,86 @@ pending_registrations = []      # list to store registration requests
 # === COMMANDS ===
 @bot.command(name="register")
 async def register(ctx):
-    """Start registration by DMing the user"""
+    """Start registration by DMing the user and save to Google Sheets"""
     try:
         await ctx.author.send("👋 What player name are you registering for?")
+
+        def check(m):
+            return m.author == ctx.author and isinstance(m.channel, discord.DMChannel)
+
+        # Wait for their DM reply
+        reply = await bot.wait_for("message", check=check, timeout=120.0)
+        requested_name = reply.content.strip()
+
+        # Append to Google Sheet
+        try:
+            pending_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
+            # Write into row B (row 2 onward, under headers)
+            pending_sheet.append_row([ctx.author.id, requested_name, "Pending"])
+            await reply.channel.send("✅ Your registration has been saved and will be reviewed.")
+        except Exception as e:
+            await reply.channel.send("❌ Failed to save registration. Please try again later.")
+            print(f"Error saving registration: {e}")
+
+    except asyncio.TimeoutError:
+        await ctx.author.send("⏳ Registration timed out. Please run `!register` again.")
     except discord.Forbidden:
         await ctx.send(f"{ctx.author.mention}, I couldn’t DM you. Please enable DMs.")
 
-@bot.event
-async def on_message(message):
-    """Listen for DM replies and store pending registrations"""
-    if isinstance(message.channel, discord.DMChannel) and not message.author.bot:
-        pending_registrations.append({
-            "discord_id": message.author.id,
-            "requested_name": message.content.strip()
-        })
-        await message.channel.send("✅ Your registration will be reviewed by the admin.")
-    await bot.process_commands(message)
-
 @bot.command(name="doadmin")
 async def doadmin(ctx):
-    """Admin reviews pending registrations"""
     if ctx.author.id != OWNER_ID:
         await ctx.send("❌ You don’t have permission to run this command.")
         return
 
-    if not pending_registrations:
-        await ctx.send("📭 No pending registrations.")
-        return
+    try:
+        pending_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
+        rows = pending_sheet.get_all_records()
 
-    # Process each pending registration interactively
-    for reg in pending_registrations[:]:
-        user = ctx.guild.get_member(reg["discord_id"])
-        await ctx.send(
-            f"{user.mention} is registering for **{reg['requested_name']}**.\n"
-            f"Type `1` to accept or `2` to deny."
-        )
+        if not rows:
+            await ctx.send("📭 No pending registrations.")
+            return
 
-        def check(m):
-            return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+        for i, reg in enumerate(rows, start=2):  # start=2 because row 1 is headers
+            discord_id = reg["Discord ID"]
+            requested_name = reg["Requested Name"]
+            status = reg["Status"]
 
-        try:
-            reply = await bot.wait_for("message", check=check, timeout=60.0)
-            if reply.content == "1":
-                # TODO: add to your Google Sheet or local DB
-                await ctx.send(f"✅ Accepted {user.mention} as '{reg['requested_name']}'")
-            else:
-                await ctx.send(f"❌ Denied registration for {user.mention}")
-            pending_registrations.remove(reg)
-        except asyncio.TimeoutError:
-            await ctx.send("⏳ Timeout — moving to next request.")
+            if status != "Pending":
+                continue
 
-    await ctx.send("📋 All commands processed.")
+            user = ctx.guild.get_member(int(discord_id))
+            if not user:
+                try:
+                    user = await bot.fetch_user(int(discord_id))
+                except Exception:
+                    await ctx.send(f"⚠️ Could not resolve user ID {discord_id}.")
+                    continue
+
+            await ctx.send(
+                f"{user.mention} is registering for **{requested_name}**.\n"
+                f"Type `1` to accept or `2` to deny."
+            )
+
+            def check(m):
+                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+
+            try:
+                reply = await bot.wait_for("message", check=check, timeout=60.0)
+                if reply.content == "1":
+                    pending_sheet.update_cell(i, 3, "Accepted")  # column 3 = Status
+                    await ctx.send(f"✅ Accepted {user.mention} as '{requested_name}'")
+                else:
+                    pending_sheet.update_cell(i, 3, "Denied")
+                    await ctx.send(f"❌ Denied registration for {user.mention}")
+            except asyncio.TimeoutError:
+                await ctx.send("⏳ Timeout — moving to next request.")
+
+        await ctx.send("📋 All commands processed.")
+
+    except Exception as e:
+        await ctx.send("❌ Error accessing Pending Registrations sheet.")
+        print(f"Error in doadmin: {e}")
 
 
 
