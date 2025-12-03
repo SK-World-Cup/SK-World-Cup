@@ -910,7 +910,7 @@ async def gamesbyplayer(ctx, *, player_name: str):
         sh = gc.open("1v1 Rankings")
         sheet = sh.worksheet("Match History")
 
-        all_matches = sheet.get_all_values()[1:]  # skip header
+        all_matches = sheet.get_all_values()[1:]  # skip header row
         filtered_matches = []
 
         # Search both Player A (col 0) and Player B (col 2)
@@ -931,9 +931,15 @@ async def gamesbyplayer(ctx, *, player_name: str):
         )
 
         for match in recent_matches:
-            player_a, score, player_b, match_id = match, pending
+            # Defensive unpacking in case some rows are shorter
+            player_a = match[0] if len(match) > 0 else ""
+            score    = match[1] if len(match) > 1 else ""
+            player_b = match[2] if len(match) > 2 else ""
+            match_id = match[3] if len(match) > 3 else "N/A"
+            status   = match[4] if len(match) > 4 else ""
+
             embed.add_field(
-                name=f"Match {match_id}",
+                name=f"Match {match_id} [{status}]",
                 value=f"**{player_a}** {score} **{player_b}**",
                 inline=False
             )
