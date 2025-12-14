@@ -1125,6 +1125,7 @@ async def reviewreports(ctx):
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
         print(f"Error in reviewreports: {e}")
+
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
     """
@@ -1203,7 +1204,17 @@ async def team(ctx, *, team_name=None):
             # === INDIVIDUAL PLAYER STATS ===
             try:
                 players_sheet = sheet.spreadsheet.worksheet("SKPL Stats")
-                players_data = players_sheet.get_all_records(head=3)  # use row 3 as header
+                all_values = players_sheet.get_all_values()
+
+                # Row 3 contains headers
+                headers = all_values[2]  # row 3 (0-indexed)
+                rows = all_values[3:]    # data starts at row 4
+
+                players_data = []
+                for row in rows:
+                    if len(row) < len(headers):
+                        continue
+                    players_data.append(dict(zip(headers, row)))
 
                 player_lines = []
                 for player in players_data:
