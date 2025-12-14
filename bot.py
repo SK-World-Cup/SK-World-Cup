@@ -1125,7 +1125,6 @@ async def reviewreports(ctx):
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
         print(f"Error in reviewreports: {e}")
-
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
     """
@@ -1204,11 +1203,11 @@ async def team(ctx, *, team_name=None):
             # === INDIVIDUAL PLAYER STATS ===
             try:
                 players_sheet = sheet.spreadsheet.worksheet("SKPL Stats")
-                players_data = players_sheet.get_all_records()
+                players_data = players_sheet.get_all_records(head=3)  # use row 3 as header
 
                 player_lines = []
                 for player in players_data:
-                    if player.get("TEAM", "").strip().lower() == team_name.lower():
+                    if str(player.get("TEAM", "")).strip().lower() == team_name.lower():
                         pname = player.get("Player", "Unknown")
                         gp = player.get("GP", "N/A")
                         w = player.get("W", "N/A")
@@ -1218,9 +1217,10 @@ async def team(ctx, *, team_name=None):
                         dstat = player.get("D", "N/A")
                         kd = player.get("K/D", "N/A")
                         winp = player.get("W%", "N/A")
+                        drawp = player.get("D%", "N/A")
                         lperc = player.get("L%", "N/A")
                         player_lines.append(
-                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}, W%:{winp}, L%:{lperc}"
+                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}, W%:{winp}, D%:{drawp}, L%:{lperc}"
                         )
 
                 if player_lines:
