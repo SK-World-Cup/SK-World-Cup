@@ -1125,7 +1125,6 @@ async def reviewreports(ctx):
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
         print(f"Error in reviewreports: {e}")
-
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
     """
@@ -1227,11 +1226,8 @@ async def team(ctx, *, team_name=None):
                         k = player.get("K", "N/A")
                         dstat = player.get("D", "N/A")
                         kd = player.get("K/D", "N/A")
-                        winp = player.get("W%", "N/A")
-                        drawp = player.get("D%", "N/A")
-                        lperc = player.get("L%", "N/A")
                         player_lines.append(
-                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}, W%:{winp}, D%:{drawp}, L%:{lperc}"
+                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}"
                         )
 
                 if player_lines:
