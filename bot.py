@@ -20,13 +20,6 @@ def home():
 def health():
     return {"status": "healthy", "bot": "1v1 Gaming Stats Bot"}
 
-def run_server():
-    """Run Flask server in a separate thread"""
-    app.run(host='0.0.0.0', port=5000, debug=False)
-
-# Start keep-alive server
-Thread(target=run_server, daemon=True).start()
-
 # === DISCORD BOT SETUP ===
 intents = discord.Intents.default()
 intents.message_content = True  # Required for reading message content
@@ -1265,7 +1258,13 @@ async def team(ctx, *, team_name=None):
         )
         await ctx.send(embed=embed)
 
-
+if __name__ == "__main__":
+    app.run(
+        host="0.0.0.0",
+        port=10000,       # Render expects this
+        debug=False,
+        use_reloader=False
+    )
 
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
