@@ -6,6 +6,7 @@ import os
 import json
 from flask import Flask
 from threading import Thread
+import random  # Make sure this is at the top of your file
 
 OWNER_ID = 1035911200237699072 
 
@@ -556,7 +557,6 @@ async def on_guild_join(guild):
 
 @bot.command(name='WHOSYOURDADDY')
 async def whos_your_daddy(ctx):
-    import random
 
     cursed_daddies = [
         "A microwave that screams when you open it",
@@ -698,9 +698,6 @@ async def whos_your_daddy(ctx):
 
     daddy = random.choice(cursed_daddies)
     await ctx.send(f"🍼 Your daddy is: **{daddy}**")
-
-
-import random  # Make sure this is at the top of your file
 
 @bot.command(name='moosecite')
 async def moosecite(ctx):
