@@ -1117,6 +1117,7 @@ async def reviewreports(ctx):
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
         print(f"Error in reviewreports: {e}")
+        
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
     """
