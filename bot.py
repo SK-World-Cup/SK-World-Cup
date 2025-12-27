@@ -943,10 +943,6 @@ async def gamesbyplayer(ctx, *, player_name: str):
         tb = traceback.format_exc()
         await ctx.send(f"❌ Command Error:\n```{str(e)}\n\n{tb}```")
 
-# === GLOBALS ===
-OWNER_ID = 1035911200237699072  # replace with your actual Discord user ID
-
-# === COMMANDS ===
 @bot.command(name="register")
 async def register(ctx):
     """Start registration by DMing the user and save to Google Sheets"""
