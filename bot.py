@@ -65,6 +65,56 @@ def setup_google_sheets():
 sheet = setup_google_sheets()
 
 # === BOT COMMANDS ===
+@bot.command(name="help")
+async def help_command(ctx, command_name=None):
+    if not command_name:
+        embed = discord.Embed(
+            title="🤖 1v1 Gaming Stats Bot — Help",
+            description="Use `!help <command>` for details",
+            color=0x0099ff
+        )
+
+        embed.add_field(
+            name="📊 Stats",
+            value="`playerelo`, `stats`, `elo`, `top10`, `headtohead`, `gamesbyplayer`",
+            inline=False
+        )
+
+        embed.add_field(
+            name="📝 Reporting",
+            value="`report`, `reviewreports`",
+            inline=False
+        )
+
+        embed.add_field(
+            name="👤 Registration",
+            value="`register`, `doadmin`",
+            inline=False
+        )
+
+        embed.add_field(
+            name="🎭 Fun",
+            value="`WHOSYOURDADDY`, `moosecite`",
+            inline=False
+        )
+
+        embed.set_footer(text="Example: !help report")
+        await ctx.send(embed=embed)
+        return
+
+    # Per-command help
+    cmd = bot.get_command(command_name)
+    if not cmd:
+        await ctx.send(f"❌ Command `{command_name}` not found.")
+        return
+
+    embed = discord.Embed(
+        title=f"ℹ️ Help — !{cmd.name}",
+        description=cmd.help or "No description available.",
+        color=0x00ff99
+    )
+    await ctx.send(embed=embed)
+
 @bot.command(name='playerelo', aliases=['stats', 'elo'])
 async def playerelo(ctx, *, player_name=None):
     """
@@ -1176,11 +1226,6 @@ def home():
 @app.route('/health')
 def health():
     return {"status": "healthy", "bot": "1v1 Gaming Stats Bot"}
-
-# === DISCORD BOT SETUP ===
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="!", intents=intents)
 
 # === STARTUP FIX ===
 from threading import Thread
