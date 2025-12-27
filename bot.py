@@ -1166,55 +1166,143 @@ async def reviewreports(ctx):
         
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
+    """
+    Display team standings (Group A/B), team stats, and individual player stats
+    Usage: !team <team_name>
+    """
     if not team_name:
-        await ctx.send("❌ Usage: `!team <team_name>`")
+        embed = discord.Embed(
+            title="❌ Missing Team Name",
+            description="Please provide a team name.\n**Usage:** `!team <team_name>`",
+            color=0xff0000
+        )
+        await ctx.send(embed=embed)
         return
 
     if not sheet:
-        await ctx.send("❌ Google Sheets connection unavailable.")
+        embed = discord.Embed(
+            title="❌ Service Unavailable",
+            description="Google Sheets connection is not available. Please try again later.",
+            color=0xff0000
+        )
+        await ctx.send(embed=embed)
         return
 
     try:
         async with ctx.typing():
-            teams_sheet = sheet.spreadsheet.worksheet("Teams")
-            rows = teams_sheet.get_all_records()
+            # === TEAM STANDINGS ===
+            standings_sheet = sheet.spreadsheet.worksheet("SKPL Standings")
+            all_values = standings_sheet.get_all_values()
 
-            # Filter rows by team name (case-insensitive)
-            team_rows = [
-                r for r in rows
-                if r.get("Team", "").lower() == team_name.lower()
-            ]
+            # Group A rows (3–7), Group B rows (12–16)
+            group_a_rows = all_values[2:7]   # skip header row at 2
+            group_b_rows = all_values[11:16] # skip header row at 11
 
-            if not team_rows:
-                await ctx.send(f"❌ Team `{team_name}` not found.")
+            team_row = None
+            group_label = None
+            for row in group_a_rows:
+                if row[0].strip().lower() == team_name.lower():
+                    team_row = row
+                    group_label = "Group A"
+                    break
+            if not team_row:
+                for row in group_b_rows:
+                    if row[0].strip().lower() == team_name.lower():
+                        team_row = row
+                        group_label = "Group B"
+                        break
+
+            if not team_row:
+                embed = discord.Embed(
+                    title="❌ Team Not Found",
+                    description=f"Team `{team_name}` was not found in SKPL Standings.",
+                    color=0xff0000
+                )
+                await ctx.send(embed=embed)
                 return
 
-            group = team_rows[0].get("Group", "N/A")
+            # Extract team stats (columns C–K)
+            gp, wins, draws, losses, kf, ka, kdr, pts_game, pts = team_row[2:11]
 
             embed = discord.Embed(
-                title=f"🏷️ Team: {team_name}",
-                description=f"**Group:** {group}",
-                color=0x00bfff
+                title=f"🏆 Team Stats: {team_name}",
+                description=f"Located in **{group_label}**",
+                color=0x00ff99
             )
+            embed.add_field(name="🎮 GP", value=gp, inline=True)
+            embed.add_field(name="✅ Wins", value=wins, inline=True)
+            embed.add_field(name="➖ Draws", value=draws, inline=True)
+            embed.add_field(name="❌ Losses", value=losses, inline=True)
+            embed.add_field(name="⚔️ Kills For", value=kf, inline=True)
+            embed.add_field(name="🛡️ Kills Against", value=ka, inline=True)
+            embed.add_field(name="📈 KDR", value=kdr, inline=True)
+            embed.add_field(name="⭐ PTS/Game", value=pts_game, inline=True)
+            embed.add_field(name="🏅 Points", value=pts, inline=True)
 
-            for r in team_rows:
-                player = r.get("Player", "Unknown")
-                games = r.get("Games", 0)
-                wins = r.get("Wins", 0)
-                losses = r.get("Losses", 0)
+            # === INDIVIDUAL PLAYER STATS ===
+            try:
+                players_sheet = sheet.spreadsheet.worksheet("SKPL Stats")
+                all_values = players_sheet.get_all_values()
 
+                # Row 3 contains headers
+                headers = all_values[2]  # row 3 (0-indexed)
+                rows = all_values[3:]    # data starts at row 4
+
+                players_data = []
+                for row in rows:
+                    if len(row) < len(headers):
+                        continue
+                    players_data.append(dict(zip(headers, row)))
+
+                player_lines = []
+                for player in players_data:
+                    if str(player.get("TEAM", "")).strip().lower() == team_name.lower():
+                        pname = player.get("Player", "Unknown")
+                        gp = player.get("GP", "N/A")
+                        w = player.get("W", "N/A")
+                        d = player.get("D", "N/A")
+                        l = player.get("L", "N/A")
+                        k = player.get("K", "N/A")
+                        dstat = player.get("D", "N/A")
+                        kd = player.get("K/D", "N/A")
+                        player_lines.append(
+                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}"
+                        )
+
+                if player_lines:
+                    embed.add_field(
+                        name="👥 Individual Player Stats",
+                        value="\n".join(player_lines),
+                        inline=False
+                    )
+                else:
+                    embed.add_field(
+                        name="👥 Individual Player Stats",
+                        value="No player stats found for this team.",
+                        inline=False
+                    )
+
+            except Exception as e:
+                print(f"⚠️ Error fetching player stats: {str(e)}")
                 embed.add_field(
-                    name=player,
-                    value=f"🎮 {games} | ✅ {wins} | ❌ {losses}",
+                    name="👥 Individual Player Stats",
+                    value="Could not retrieve player stats.",
                     inline=False
                 )
 
-            embed.set_footer(text="Team data from Teams sheet")
+            embed.set_footer(text="Data from SKPL Standings & SKPL Stats tabs")
+            embed.timestamp = ctx.message.created_at
+
             await ctx.send(embed=embed)
 
     except Exception as e:
-        print(f"❌ Error in team command: {e}")
-        await ctx.send("❌ Failed to load team data.")
+        print(f"❌ Error in team command: {str(e)}")
+        embed = discord.Embed(
+            title="❌ Error Fetching Team Data",
+            description="There was an error retrieving team stats. Please try again later.",
+            color=0xff0000
+        )
+        await ctx.send(embed=embed)
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
