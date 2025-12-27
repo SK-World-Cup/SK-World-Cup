@@ -25,6 +25,8 @@ def health():
 intents = discord.Intents.default()
 intents.message_content = True  # Required for reading message content
 bot = commands.Bot(command_prefix="!", intents=intents)
+bot.remove_command("help")  # keep this
+print("Loaded commands at import time:", list(bot.commands))
 
 # === GOOGLE SHEETS SETUP ===
 def setup_google_sheets():
