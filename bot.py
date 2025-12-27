@@ -1258,31 +1258,47 @@ async def team(ctx, *, team_name=None):
         )
         await ctx.send(embed=embed)
 
-if __name__ == "__main__":
+# === KEEP-ALIVE SERVER ===
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Discord Bot is running! 🤖"
+
+@app.route('/health')
+def health():
+    return {"status": "healthy", "bot": "1v1 Gaming Stats Bot"}
+
+# === DISCORD BOT SETUP ===
+intents = discord.Intents.default()
+intents.message_content = True
+bot = commands.Bot(command_prefix="!", intents=intents)
+
+# === STARTUP FIX ===
+from threading import Thread
+
+def run_web():
     app.run(
         host="0.0.0.0",
-        port=10000,       # Render expects this
+        port=10000,
         debug=False,
         use_reloader=False
     )
 
+def keep_alive():
+    thread = Thread(target=run_web)
+    thread.start()
+
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
-    # Get bot token from environment variables
     bot_token = os.getenv("BOT_TOKEN", "")
 
     if not bot_token:
-        print("❌ Error: BOT_TOKEN not found in environment variables")
-        print("Please set the BOT_TOKEN environment variable with your Discord bot token")
+        print("❌ BOT_TOKEN missing")
         exit(1)
 
-    print("🚀 Starting Discord Bot...")
-    print("🌐 Keep-alive server running on http://0.0.0.0:5000")
+    print("🚀 Starting keep-alive web server...")
+    keep_alive()
 
-    try:
-        # Run the bot
-        bot.run(bot_token)
-    except discord.LoginFailure:
-        print("❌ Error: Invalid bot token. Please check your BOT_TOKEN environment variable.")
-    except Exception as e:
-        print(f"❌ Fatal error starting bot: {str(e)}")
+    print("🤖 Starting Discord bot...")
+    bot.run(bot_token)
