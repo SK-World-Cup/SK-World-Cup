@@ -9,6 +9,22 @@ from threading import Thread
 import random  # Make sure this is at the top of your file
 
 OWNER_ID = 1035911200237699072 
+ALLOWED_CHANNEL_ID = 1456526135075537019
+
+def owner_or_channel():
+    async def predicate(ctx):
+        # Allow bot owner
+        if ctx.author.id == OWNER_ID:
+            return True
+        
+        # Allow anyone in the allowed channel
+        if ctx.channel.id == ALLOWED_CHANNEL_ID:
+            return True
+        
+        # Otherwise block
+        return False
+
+    return commands.check(predicate)
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
@@ -1022,11 +1038,8 @@ async def register(ctx):
         await ctx.send(f"{ctx.author.mention}, I couldn’t DM you. Please enable DMs.")
 
 @bot.command(name="doadmin")
+@owner_or_channel()   # ⬅️ Anyone in allowed channel OR owner can run the command
 async def doadmin(ctx):
-    if ctx.author.id != OWNER_ID:
-        await ctx.send("❌ You don’t have permission to run this command.")
-        return
-
     try:
         pending_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
         rows = pending_sheet.get_all_records()
@@ -1043,8 +1056,7 @@ async def doadmin(ctx):
             if status != "Pending":
                 continue
 
-            # 🔑 This is where your block fits
-            discord_id = int(discord_id)  # cast back to int for Discord
+            discord_id = int(discord_id)
             user = ctx.guild.get_member(discord_id)
             if not user:
                 user = await bot.fetch_user(discord_id)
@@ -1054,17 +1066,27 @@ async def doadmin(ctx):
                 f"Type `1` to accept or `2` to deny."
             )
 
+            # Allow OWNER or ANYONE in the allowed channel to approve/deny
             def check(m):
-                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+                return (
+                    m.channel.id == ctx.channel.id
+                    and m.content in ["1", "2"]
+                    and (
+                        m.author.id == OWNER_ID or
+                        m.channel.id == ALLOWED_CHANNEL_ID
+                    )
+                )
 
             try:
                 reply = await bot.wait_for("message", check=check, timeout=60.0)
+
                 if reply.content == "1":
-                    pending_sheet.update_cell(i, 3, "Accepted")  # column 3 = Status
+                    pending_sheet.update_cell(i, 3, "Accepted")
                     await ctx.send(f"✅ Accepted {user.mention} as '{requested_name}'")
                 else:
                     pending_sheet.update_cell(i, 3, "Denied")
                     await ctx.send(f"❌ Denied registration for {user.mention}")
+
             except asyncio.TimeoutError:
                 await ctx.send("⏳ Timeout — moving to next request.")
 
@@ -1116,11 +1138,8 @@ async def report(ctx, player1=None, score=None, player2=None):
         print(f"Error in !report: {e}")
 
 @bot.command(name="reviewreports")
+@owner_or_channel()   # ⬅️ Anyone in allowed channel OR owner can run the command
 async def reviewreports(ctx):
-    if ctx.author.id != OWNER_ID:
-        await ctx.send("❌ You don’t have permission to run this command.")
-        return
-
     try:
         match_sheet = sheet.spreadsheet.worksheet("Match History")
         rows = match_sheet.get_all_records()
@@ -1135,7 +1154,6 @@ async def reviewreports(ctx):
             player2 = reg["Player 2"]
             pending = reg.get("Pending", "")
 
-            # 🔑 Only review rows marked Pending
             if pending.lower() != "pending":
                 continue
 
@@ -1144,17 +1162,27 @@ async def reviewreports(ctx):
                 f"Type `1` to accept (mark Yes) or `2` to deny (delete)."
             )
 
+            # Allow OWNER or ANYONE in the allowed channel to approve/deny
             def check(m):
-                return m.author.id == OWNER_ID and m.channel == ctx.channel and m.content in ["1", "2"]
+                return (
+                    m.channel.id == ctx.channel.id
+                    and m.content in ["1", "2"]
+                    and (
+                        m.author.id == OWNER_ID or
+                        m.channel.id == ALLOWED_CHANNEL_ID
+                    )
+                )
 
             try:
                 reply = await bot.wait_for("message", check=check, timeout=60.0)
+
                 if reply.content == "1":
-                    match_sheet.update_cell(i, 5, "Yes")  # Column E = Pending
+                    match_sheet.update_cell(i, 5, "Yes")
                     await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
                 else:
                     match_sheet.delete_rows(i)
                     await ctx.send(f"❌ Denied match: {player1} {score} {player2} (row deleted)")
+
             except asyncio.TimeoutError:
                 await ctx.send("⏳ Timeout — moving to next report.")
 
@@ -1163,7 +1191,7 @@ async def reviewreports(ctx):
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
         print(f"Error in reviewreports: {e}")
-        
+
 @bot.command(name='team')
 async def team(ctx, *, team_name=None):
     """
