@@ -128,7 +128,7 @@ async def help_command(ctx, command_name=None):
 
         embed.add_field(
             name="🛠️ Utilities",
-            value="`translate`",
+            value="`translate`, `convert`",
             inline=False
         )
 
