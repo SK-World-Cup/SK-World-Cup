@@ -1565,22 +1565,20 @@ async def translate_step1(ctx, *, text=None):
 
 # Full timezone list
 TIMEZONES = {
-    1: ("EST", "Eastern Standard Time", "America/New_York"),
+    1: ("EST", "Eastern Standard Time", "Etc/GMT+5"),
     2: ("EDT", "Eastern Daylight Time", "America/New_York"),
-    3: ("CST", "Central Standard Time", "America/Chicago"),
+    3: ("CST", "Central Standard Time", "Etc/GMT+6"),
     4: ("CDT", "Central Daylight Time", "America/Chicago"),
-    5: ("MST", "Mountain Standard Time", "America/Denver"),
+    5: ("MST", "Mountain Standard Time", "Etc/GMT+7"),
     6: ("MDT", "Mountain Daylight Time", "America/Denver"),
-    7: ("PST", "Pacific Standard Time", "America/Los_Angeles"),
+    7: ("PST", "Pacific Standard Time", "Etc/GMT+8"),
     8: ("PDT", "Pacific Daylight Time", "America/Los_Angeles"),
-
     9: ("UTC", "Coordinated Universal Time", "UTC"),
     10: ("GMT", "Greenwich Mean Time", "Europe/London"),
     11: ("CET", "Central European Time", "Europe/Berlin"),
     12: ("CEST", "Central European Summer Time", "Europe/Berlin"),
     13: ("EET", "Eastern European Time", "Europe/Helsinki"),
     14: ("EEST", "Eastern European Summer Time", "Europe/Helsinki"),
-
     15: ("IST", "India Standard Time", "Asia/Kolkata"),
     16: ("PKT", "Pakistan Standard Time", "Asia/Karachi"),
     17: ("BST", "Bangladesh Standard Time", "Asia/Dhaka"),
@@ -1590,18 +1588,15 @@ TIMEZONES = {
     21: ("CST-CHINA", "China Standard Time", "Asia/Shanghai"),
     22: ("JST", "Japan Standard Time", "Asia/Tokyo"),
     23: ("KST", "Korea Standard Time", "Asia/Seoul"),
-
     24: ("MSK", "Moscow Standard Time", "Europe/Moscow"),
     25: ("TRT", "Turkey Time", "Europe/Istanbul"),
     26: ("AST", "Arabia Standard Time", "Asia/Riyadh"),
-
-    27: ("AEST", "Australian Eastern Standard Time", "Australia/Sydney"),
+    27: ("AEST", "Australian Eastern Standard Time", "Etc/GMT-10"),
     28: ("AEDT", "Australian Eastern Daylight Time", "Australia/Sydney"),
-    29: ("ACST", "Australian Central Standard Time", "Australia/Adelaide"),
+    29: ("ACST", "Australian Central Standard Time", "Etc/GMT-9.5"),
     30: ("ACDT", "Australian Central Daylight Time", "Australia/Adelaide"),
-    31: ("AWST", "Australian Western Standard Time", "Australia/Perth"),
-
-    32: ("NZST", "New Zealand Standard Time", "Pacific/Auckland"),
+    31: ("AWST", "Australian Western Standard Time", "Etc/GMT-8"),
+    32: ("NZST", "New Zealand Standard Time", "Etc/GMT-12"),
     33: ("NZDT", "New Zealand Daylight Time", "Pacific/Auckland"),
 }
 
