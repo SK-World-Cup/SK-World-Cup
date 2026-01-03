@@ -1215,7 +1215,7 @@ async def reviewreports(ctx):
 async def team(ctx, *, team_name=None):
     """
     Display team standings (Group A/B), team stats, and individual player stats
-    Usage: !team <team_name>
+    Usage: !team <team_name or abbreviation>
     """
     if not team_name:
         embed = discord.Embed(
@@ -1237,24 +1237,37 @@ async def team(ctx, *, team_name=None):
 
     try:
         async with ctx.typing():
-            # === TEAM STANDINGS ===
+
+            # === LOAD SKPL STANDINGS (ONE API CALL) ===
             standings_sheet = sheet.spreadsheet.worksheet("SKPL Standings")
-            all_values = standings_sheet.get_all_values()
+            standings_data = standings_sheet.get_all_values()
 
-            # Group A rows (3–7), Group B rows (12–16)
-            group_a_rows = all_values[2:7]   # skip header row at 2
-            group_b_rows = all_values[11:16] # skip header row at 11
+            # Group A = rows 3–7 (index 2–6)
+            # Group B = rows 12–16 (index 11–15)
+            group_a = standings_data[2:7]
+            group_b = standings_data[11:16]
 
+            search = team_name.lower().strip()
             team_row = None
             group_label = None
-            for row in group_a_rows:
-                if row[0].strip().lower() == team_name.lower():
+
+            # Helper to match full name OR abbreviation
+            def matches(row):
+                full = row[0].strip().lower()
+                abbr = row[12].strip().lower() if len(row) > 12 else ""
+                return search == full or search == abbr
+
+            # Search Group A
+            for row in group_a:
+                if matches(row):
                     team_row = row
                     group_label = "Group A"
                     break
+
+            # Search Group B
             if not team_row:
-                for row in group_b_rows:
-                    if row[0].strip().lower() == team_name.lower():
+                for row in group_b:
+                    if matches(row):
                         team_row = row
                         group_label = "Group B"
                         break
@@ -1268,11 +1281,13 @@ async def team(ctx, *, team_name=None):
                 await ctx.send(embed=embed)
                 return
 
-            # Extract team stats (columns C–K)
+            # Extract stats (columns C–K)
             gp, wins, draws, losses, kf, ka, kdr, pts_game, pts = team_row[2:11]
+            team_full_name = team_row[0]
+            team_abbr = team_row[12] if len(team_row) > 12 else ""
 
             embed = discord.Embed(
-                title=f"🏆 Team Stats: {team_name}",
+                title=f"🏆 Team Stats: {team_full_name} ({team_abbr})",
                 description=f"Located in **{group_label}**",
                 color=0x00ff99
             )
@@ -1286,40 +1301,42 @@ async def team(ctx, *, team_name=None):
             embed.add_field(name="⭐ PTS/Game", value=pts_game, inline=True)
             embed.add_field(name="🏅 Points", value=pts, inline=True)
 
-            # === INDIVIDUAL PLAYER STATS ===
+            # === LOAD PLAYER STATS (ONE API CALL) ===
             try:
                 players_sheet = sheet.spreadsheet.worksheet("SKPL Stats")
-                all_values = players_sheet.get_all_values()
+                players_data = players_sheet.get_all_values()
 
-                # Row 3 contains headers
-                headers = all_values[2]  # row 3 (0-indexed)
-                rows = all_values[3:]    # data starts at row 4
+                headers = players_data[2]   # row 3
+                rows = players_data[3:]     # row 4+
 
-                players_data = []
+                players = []
                 for row in rows:
                     if len(row) < len(headers):
                         continue
-                    players_data.append(dict(zip(headers, row)))
+                    entry = dict(zip(headers, row))
 
-                player_lines = []
-                for player in players_data:
-                    if str(player.get("TEAM", "")).strip().lower() == team_name.lower():
-                        pname = player.get("Player", "Unknown")
-                        gp = player.get("GP", "N/A")
-                        w = player.get("W", "N/A")
-                        d = player.get("D", "N/A")
-                        l = player.get("L", "N/A")
-                        k = player.get("K", "N/A")
-                        dstat = player.get("D", "N/A")
-                        kd = player.get("K/D", "N/A")
-                        player_lines.append(
-                            f"**{pname}** — GP:{gp}, W:{w}, D:{d}, L:{l}, K:{k}, D:{dstat}, K/D:{kd}"
+                    # Match by team name OR abbreviation
+                    pteam = entry.get("TEAM", "").strip().lower()
+                    if pteam == team_full_name.lower() or pteam == team_abbr.lower():
+                        players.append(entry)
+
+                if players:
+                    lines = []
+                    for p in players:
+                        lines.append(
+                            f"**{p.get('Player','Unknown')}** — "
+                            f"GP:{p.get('GP','N/A')}, "
+                            f"W:{p.get('W','N/A')}, "
+                            f"D:{p.get('D','N/A')}, "
+                            f"L:{p.get('L','N/A')}, "
+                            f"K:{p.get('K','N/A')}, "
+                            f"D:{p.get('D','N/A')}, "
+                            f"K/D:{p.get('K/D','N/A')}"
                         )
 
-                if player_lines:
                     embed.add_field(
                         name="👥 Individual Player Stats",
-                        value="\n".join(player_lines),
+                        value="\n".join(lines),
                         inline=False
                     )
                 else:
@@ -1330,7 +1347,7 @@ async def team(ctx, *, team_name=None):
                     )
 
             except Exception as e:
-                print(f"⚠️ Error fetching player stats: {str(e)}")
+                print(f"⚠️ Error fetching player stats: {e}")
                 embed.add_field(
                     name="👥 Individual Player Stats",
                     value="Could not retrieve player stats.",
@@ -1343,7 +1360,7 @@ async def team(ctx, *, team_name=None):
             await ctx.send(embed=embed)
 
     except Exception as e:
-        print(f"❌ Error in team command: {str(e)}")
+        print(f"❌ Error in team command: {e}")
         embed = discord.Embed(
             title="❌ Error Fetching Team Data",
             description="There was an error retrieving team stats. Please try again later.",
@@ -1355,7 +1372,7 @@ async def team(ctx, *, team_name=None):
 async def standings(ctx):
     """
     Show SKPL standings for Group A and Group B.
-    Reads from the 'SKPL Standings' worksheet.
+    Optimized: Only ONE Google Sheets API call.
     """
     if not sheet:
         await ctx.send("❌ Google Sheets connection unavailable.")
@@ -1370,65 +1387,60 @@ async def standings(ctx):
                 await ctx.send("❌ Could not find a worksheet named **SKPL Standings**.")
                 return
 
-            # Helper to read a block of rows
-            def read_group(start_row, end_row):
+            # ONE API CALL — get entire sheet
+            data = skpl_sheet.get_all_values()
+
+            # Helper to parse rows from memory
+            def parse_group(start_row, end_row):
                 teams = []
-                for row in range(start_row, end_row + 1):
-                    team = skpl_sheet.acell(f"A{row}").value
-                    gp = skpl_sheet.acell(f"C{row}").value
-                    w = skpl_sheet.acell(f"D{row}").value
-                    d = skpl_sheet.acell(f"E{row}").value
-                    l = skpl_sheet.acell(f"F{row}").value
-                    kf = skpl_sheet.acell(f"G{row}").value
-                    ka = skpl_sheet.acell(f"H{row}").value
-                    kdr = skpl_sheet.acell(f"I{row}").value
-                    ppg = skpl_sheet.acell(f"J{row}").value
-                    pts = skpl_sheet.acell(f"K{row}").value
-                    abbr = skpl_sheet.acell(f"M{row}").value
+                for r in range(start_row - 1, end_row):  # convert to 0-index
+                    row = data[r]
+
+                    team = row[0] if len(row) > 0 else ""
+                    gp   = row[2] if len(row) > 2 else "0"
+                    w    = row[3] if len(row) > 3 else "0"
+                    d    = row[4] if len(row) > 4 else "0"
+                    l    = row[5] if len(row) > 5 else "0"
+                    kf   = row[6] if len(row) > 6 else "0"
+                    ka   = row[7] if len(row) > 7 else "0"
+                    kdr  = row[8] if len(row) > 8 else "0"
+                    ppg  = row[9] if len(row) > 9 else "0"
+                    pts  = row[10] if len(row) > 10 else "0"
+                    abbr = row[12] if len(row) > 12 else ""
 
                     if not team:
                         continue
 
-                    # Convert numbers safely
-                    def safe_int(x):
+                    # Safe conversions
+                    def to_int(x):
                         try: return int(x)
                         except: return 0
 
-                    def safe_float(x):
+                    def to_float(x):
                         try: return float(x)
                         except: return 0.0
-
-                    gp = safe_int(gp)
-                    w = safe_int(w)
-                    d = safe_int(d)
-                    l = safe_int(l)
-                    kf = safe_int(kf)
-                    ka = safe_int(ka)
-                    pts = safe_int(pts)
-                    kdr = safe_float(kdr)
-                    ppg = safe_float(ppg)
 
                     teams.append({
                         "team": team,
                         "abbr": abbr,
-                        "gp": gp,
-                        "w": w,
-                        "d": d,
-                        "l": l,
-                        "kf": kf,
-                        "ka": ka,
-                        "kdr": kdr,
-                        "ppg": ppg,
-                        "pts": pts
+                        "gp": to_int(gp),
+                        "w": to_int(w),
+                        "d": to_int(d),
+                        "l": to_int(l),
+                        "kf": to_int(kf),
+                        "ka": to_int(ka),
+                        "kdr": to_float(kdr),
+                        "ppg": to_float(ppg),
+                        "pts": to_int(pts)
                     })
 
-                # Sort by: Points → Wins → KDR
+                # Sort by PTS → W → KDR
                 teams.sort(key=lambda x: (x["pts"], x["w"], x["kdr"]), reverse=True)
                 return teams
 
-            # Read both groups
-            group_a = read_group(3, 7)
-            group_b = read_group(12, 16)
+            # Parse groups
+            group_a = parse_group(3, 7)
+            group_b = parse_group(12, 16)
 
             # Build embed for Group A
             embed_a = discord.Embed(
