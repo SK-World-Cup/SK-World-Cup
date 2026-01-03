@@ -1309,11 +1309,21 @@ async def team(ctx, *, team_name=None):
                 headers = players_data[2]   # row 3
                 rows = players_data[3:]     # row 4+
 
+                # Fix duplicate D headers by column index
+                fixed_headers = []
+                for idx, h in enumerate(headers):
+                    if idx == 4:      # Column E = Draws
+                        fixed_headers.append("Draws")
+                    elif idx == 7:    # Column H = Deaths
+                        fixed_headers.append("Deaths")
+                    else:
+                        fixed_headers.append(h)
+
                 players = []
                 for row in rows:
-                    if len(row) < len(headers):
+                    if len(row) < len(fixed_headers):
                         continue
-                    entry = dict(zip(headers, row))
+                    entry = dict(zip(fixed_headers, row))
 
                     # Match by team name OR abbreviation
                     pteam = entry.get("TEAM", "").strip().lower()
@@ -1327,10 +1337,10 @@ async def team(ctx, *, team_name=None):
                             f"**{p.get('Player','Unknown')}** — "
                             f"GP:{p.get('GP','N/A')}, "
                             f"W:{p.get('W','N/A')}, "
-                            f"D:{p.get('D','N/A')}, "
+                            f"D:{p.get('Draws','N/A')}, "
                             f"L:{p.get('L','N/A')}, "
                             f"K:{p.get('K','N/A')}, "
-                            f"D:{p.get('D','N/A')}, "
+                            f"Deaths:{p.get('Deaths','N/A')}, "
                             f"K/D:{p.get('K/D','N/A')}"
                         )
 
