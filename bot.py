@@ -1569,21 +1569,35 @@ async def on_message(message):
                 lang_name, lang_code = LANG_OPTIONS[choice]
                 original_text = pending_translations.pop(user_id)
 
+                # Clean text to avoid googletrans failures
+                clean_text = (
+                    original_text
+                    .replace("!", "")
+                    .replace("?", "")
+                    .replace("\n", " ")
+                    .strip()
+                )
+
                 try:
-                    result = translator.translate(original_text, dest=lang_code)
+                    # First attempt
+                    result = translator.translate(clean_text, dest=lang_code)
+                except:
+                    try:
+                        # Retry with lowercase
+                        result = translator.translate(clean_text.lower(), dest=lang_code)
+                    except:
+                        await message.channel.send("❌ Translation failed twice. Try rephrasing the text.")
+                        return
 
-                    embed = discord.Embed(
-                        title=f"🌐 Translated to {lang_name}",
-                        color=0x00ff99
-                    )
-                    embed.add_field(name="🔤 Original", value=original_text, inline=False)
-                    embed.add_field(name="✨ Translation", value=result.text, inline=False)
-                    embed.set_footer(text=f"Detected language: {result.src}")
+                embed = discord.Embed(
+                    title=f"🌐 Translated to {lang_name}",
+                    color=0x00ff99
+                )
+                embed.add_field(name="🔤 Original", value=original_text, inline=False)
+                embed.add_field(name="✨ Translation", value=result.text, inline=False)
+                embed.set_footer(text=f"Detected language: {result.src}")
 
-                    await message.channel.send(embed=embed)
-                except Exception as e:
-                    await message.channel.send("❌ Translation failed. Try again.")
-
+                await message.channel.send(embed=embed)
                 return
 
         # Invalid input
