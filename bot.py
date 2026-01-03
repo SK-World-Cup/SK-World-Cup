@@ -1565,42 +1565,46 @@ async def translate_step1(ctx, *, text=None):
 
 # Full timezone list
 TIMEZONES = {
-    1: ("EST", "Eastern Standard Time", "Etc/GMT+5"),
-    2: ("EDT", "Eastern Daylight Time", "America/New_York"),
-    3: ("CST", "Central Standard Time", "Etc/GMT+6"),
-    4: ("CDT", "Central Daylight Time", "America/Chicago"),
-    5: ("MST", "Mountain Standard Time", "Etc/GMT+7"),
-    6: ("MDT", "Mountain Daylight Time", "America/Denver"),
-    7: ("PST", "Pacific Standard Time", "Etc/GMT+8"),
-    8: ("PDT", "Pacific Daylight Time", "America/Los_Angeles"),
-    9: ("UTC", "Coordinated Universal Time", "UTC"),
+    # North America
+    1: ("EST", "Eastern Standard Time", "America/Panama"),       # UTC-5, no DST
+    2: ("EDT", "Eastern Daylight Time", "America/New_York"),     # UTC-4 with DST
+    3: ("CST", "Central Standard Time", "America/Guatemala"),    # UTC-6, no DST
+    4: ("CDT", "Central Daylight Time", "America/Chicago"),      # UTC-5 with DST
+    5: ("MST", "Mountain Standard Time", "America/Phoenix"),     # UTC-7, no DST
+    6: ("MDT", "Mountain Daylight Time", "America/Denver"),      # UTC-6 with DST
+    7: ("PST", "Pacific Standard Time", "Pacific/Pitcairn"),     # UTC-8, no DST
+    8: ("PDT", "Pacific Daylight Time", "America/Los_Angeles"),  # UTC-7 with DST
+    9:  ("UTC", "Coordinated Universal Time", "UTC"),
     10: ("GMT", "Greenwich Mean Time", "Europe/London"),
-    11: ("CET", "Central European Time", "Europe/Berlin"),
+    # Europe
+    11: ("CET", "Central European Time", "Europe/Berlin"),       # UTC+1 (uses DST to CEST)
     12: ("CEST", "Central European Summer Time", "Europe/Berlin"),
-    13: ("EET", "Eastern European Time", "Europe/Helsinki"),
+    13: ("EET", "Eastern European Time", "Europe/Helsinki"),     # UTC+2 (uses DST to EEST)
     14: ("EEST", "Eastern European Summer Time", "Europe/Helsinki"),
-    15: ("IST", "India Standard Time", "Asia/Kolkata"),
-    16: ("PKT", "Pakistan Standard Time", "Asia/Karachi"),
-    17: ("BST", "Bangladesh Standard Time", "Asia/Dhaka"),
-    18: ("WIB", "Western Indonesia Time", "Asia/Jakarta"),
-    19: ("WITA", "Central Indonesia Time", "Asia/Makassar"),
-    20: ("WIT", "Eastern Indonesia Time", "Asia/Jayapura"),
-    21: ("CST-CHINA", "China Standard Time", "Asia/Shanghai"),
-    22: ("JST", "Japan Standard Time", "Asia/Tokyo"),
-    23: ("KST", "Korea Standard Time", "Asia/Seoul"),
-    24: ("MSK", "Moscow Standard Time", "Europe/Moscow"),
-    25: ("TRT", "Turkey Time", "Europe/Istanbul"),
-    26: ("AST", "Arabia Standard Time", "Asia/Riyadh"),
-    27: ("AEST", "Australian Eastern Standard Time", "Etc/GMT-10"),
-    28: ("AEDT", "Australian Eastern Daylight Time", "Australia/Sydney"),
-    29: ("ACST", "Australian Central Standard Time", "Etc/GMT-9.5"),
-    30: ("ACDT", "Australian Central Daylight Time", "Australia/Adelaide"),
-    31: ("AWST", "Australian Western Standard Time", "Etc/GMT-8"),
-    32: ("NZST", "New Zealand Standard Time", "Etc/GMT-12"),
-    33: ("NZDT", "New Zealand Daylight Time", "Pacific/Auckland"),
+    # Asia
+    15: ("IST", "India Standard Time", "Asia/Kolkata"),          # UTC+5:30
+    16: ("PKT", "Pakistan Standard Time", "Asia/Karachi"),       # UTC+5
+    17: ("BST", "Bangladesh Standard Time", "Asia/Dhaka"),       # UTC+6
+    18: ("WIB", "Western Indonesia Time", "Asia/Jakarta"),       # UTC+7
+    19: ("WITA", "Central Indonesia Time", "Asia/Makassar"),     # UTC+8
+    20: ("WIT", "Eastern Indonesia Time", "Asia/Jayapura"),      # UTC+9
+    21: ("CST-CHINA", "China Standard Time", "Asia/Shanghai"),   # UTC+8
+    22: ("JST", "Japan Standard Time", "Asia/Tokyo"),            # UTC+9
+    23: ("KST", "Korea Standard Time", "Asia/Seoul"),            # UTC+9
+    # Europe / Middle East
+    24: ("MSK", "Moscow Standard Time", "Europe/Moscow"),        # UTC+3
+    25: ("TRT", "Turkey Time", "Europe/Istanbul"),               # UTC+3
+    26: ("AST", "Arabia Standard Time", "Asia/Riyadh"),          # UTC+3
+    # Australia / NZ
+    27: ("AEST", "Australian Eastern Standard Time", "Pacific/Port_Moresby"),  # UTC+10, no DST
+    28: ("AEDT", "Australian Eastern Daylight Time", "Australia/Sydney"),      # UTC+11 with DST
+    29: ("ACST", "Australian Central Standard Time", "Australia/Darwin"),      # UTC+9:30, no DST
+    30: ("ACDT", "Australian Central Daylight Time", "Australia/Adelaide"),    # UTC+10:30 with DST
+    31: ("AWST", "Australian Western Standard Time", "Australia/Perth"),       # UTC+8, no DST
+    32: ("NZST", "New Zealand Standard Time", "Pacific/Tarawa"),               # UTC+12, no DST
+    33: ("NZDT", "New Zealand Daylight Time", "Pacific/Auckland"),             # UTC+13 with DST
 }
 
-# Reverse lookup for text input
 TZ_LOOKUP = {}
 for num, (short, full, zone) in TIMEZONES.items():
     TZ_LOOKUP[str(num)] = num
