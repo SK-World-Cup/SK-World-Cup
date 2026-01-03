@@ -1629,15 +1629,26 @@ def parse_time_string(t):
 
 @bot.command(name="convert")
 async def convert_step1(ctx, *, time_str=None):
+    """
+    Step 1: User provides a time.
+    Example: !convert 10:40 PM
+    """
+
+    # No time provided
     if not time_str:
         await ctx.send("❌ Please provide a time.\nExample: `!convert 10:40 PM`")
         return
 
+    # Parse the time (12h or 24h)
     parsed = parse_time_string(time_str)
     if not parsed:
-        await ctx.send("❌ Invalid time format. Try things like:\n`10:40 PM`, `22:40`, `7 PM`")
+        await ctx.send(
+            "❌ Invalid time format.\nTry formats like:\n"
+            "`10:40 PM`, `22:40`, `7 PM`, `07:00`"
+        )
         return
 
+    # Save conversion state for this user
     pending_conversions[ctx.author.id] = {
         "time": parsed,
         "step": 1,
@@ -1645,13 +1656,13 @@ async def convert_step1(ctx, *, time_str=None):
     }
 
     # Build timezone menu
-    menu = "**What timezone is this time IN?**\n\n"
+    menu_lines = ["**What timezone is this time IN?**\n"]
     for num, (short, full, _) in TIMEZONES.items():
-        menu += f"{num}. **{short}** ({full})\n"
+        menu_lines.append(f"{num}. **{short}** ({full})")
 
     embed = discord.Embed(
         title="🕒 Timezone Selection",
-        description=menu,
+        description="\n".join(menu_lines),
         color=0x00aaff
     )
     embed.set_footer(text="Type the number or the timezone name.")
@@ -1671,7 +1682,6 @@ async def on_message(message):
     # 1. TRANSLATE FLOW
     # ============================================================
     if user_id in pending_translations:
-        # User must type a number from the menu
         if content.isdigit():
             choice = int(content)
 
@@ -1679,7 +1689,6 @@ async def on_message(message):
                 lang_name, lang_code = LANG_OPTIONS[choice]
                 original_text = pending_translations.pop(user_id)
 
-                # Clean text to avoid googletrans failures
                 clean_text = (
                     original_text
                     .replace("!", "")
@@ -1708,7 +1717,6 @@ async def on_message(message):
                 await message.channel.send(embed=embed)
                 return
 
-        # Invalid input
         await message.channel.send("❌ Please type a valid number from the list.")
         return
 
@@ -1718,7 +1726,6 @@ async def on_message(message):
     if user_id in pending_conversions:
         data = pending_conversions[user_id]
 
-        # Try to match timezone (number, short code, or full name)
         tz_choice = TZ_LOOKUP.get(content)
         if not tz_choice:
             await message.channel.send("❌ Invalid timezone. Type a number or timezone name.")
@@ -1729,7 +1736,6 @@ async def on_message(message):
             data["from"] = tz_choice
             data["step"] = 2
 
-            # Build target timezone menu
             menu = "**Convert this time INTO which timezone?**\n\n"
             for num, (short, full, _) in TIMEZONES.items():
                 menu += f"{num}. **{short}** ({full})\n"
@@ -1752,11 +1758,21 @@ async def on_message(message):
             src = pytz.timezone(from_tz)
             dst = pytz.timezone(to_tz)
 
-            # Localize and convert
-            original = src.localize(data["time"])
+            # --------------------------------------------------------
+            # FIX: Attach today's date to avoid historical offsets
+            # --------------------------------------------------------
+            now = datetime.now()
+            dt = datetime(
+                year=now.year,
+                month=now.month,
+                day=now.day,
+                hour=data["time"].hour,
+                minute=data["time"].minute
+            )
+
+            original = src.localize(dt)
             converted = original.astimezone(dst)
 
-            # Cleanup
             del pending_conversions[user_id]
 
             embed = discord.Embed(
