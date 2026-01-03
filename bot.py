@@ -121,7 +121,7 @@ async def help_command(ctx, command_name=None):
         )
 
         embed.add_field(
-            name="🏆 SKPL",
+            name="🏆 League 2025-2026",
             value="`standings`, `team`",
             inline=False
         )
