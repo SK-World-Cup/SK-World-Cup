@@ -1520,12 +1520,19 @@ pending_translations = {}  # user_id -> text_to_translate
 @bot.command(name="translate")
 async def translate_step1(ctx, *, text=None):
     """
-    Step 1: User provides text. Bot asks which language to translate into.
-    Usage: !translate "Hello, how are you"
+    Step 1: User provides text OR replies to a message.
+    Usage: !translate "Hello"
+           (or reply to a message) !translate
     """
+
+    # If no text was typed, check if user replied to a message
     if not text:
-        await ctx.send("❌ Please include text to translate.\nExample: `!translate \"Hello\"`")
-        return
+        if ctx.message.reference:
+            replied_msg = await ctx.channel.fetch_message(ctx.message.reference.message_id)
+            text = replied_msg.content
+        else:
+            await ctx.send("❌ Please include text to translate OR reply to a message.\nExample: `!translate \"Hello\"`")
+            return
 
     # Save text for this user
     pending_translations[ctx.author.id] = text
