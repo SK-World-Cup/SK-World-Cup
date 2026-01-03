@@ -1665,11 +1665,14 @@ async def on_message(message):
         return
 
     user_id = message.author.id
+    content_raw = message.content.strip()
+    content = content_raw.lower()
 
-    # If user is choosing a translation language
+    # ============================================================
+    # 1. TRANSLATE FLOW
+    # ============================================================
     if user_id in pending_translations:
-        content = message.content.strip()
-
+        # User must type a number from the menu
         if content.isdigit():
             choice = int(content)
 
@@ -1687,11 +1690,9 @@ async def on_message(message):
                 )
 
                 try:
-                    # First attempt
                     result = translator.translate(clean_text, dest=lang_code)
                 except:
                     try:
-                        # Retry with lowercase
                         result = translator.translate(clean_text.lower(), dest=lang_code)
                     except:
                         await message.channel.send("❌ Translation failed twice. Try rephrasing the text.")
@@ -1712,22 +1713,13 @@ async def on_message(message):
         await message.channel.send("❌ Please type a valid number from the list.")
         return
 
-    # Allow other commands to work
-    await bot.process_commands(message)
-
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    user_id = message.author.id
-
-    # TIMEZONE CONVERSION FLOW
+    # ============================================================
+    # 2. TIMEZONE CONVERSION FLOW
+    # ============================================================
     if user_id in pending_conversions:
         data = pending_conversions[user_id]
-        content = message.content.strip().lower()
 
-        # Try to match timezone
+        # Try to match timezone (number, short code, or full name)
         tz_choice = TZ_LOOKUP.get(content)
         if not tz_choice:
             await message.channel.send("❌ Invalid timezone. Type a number or timezone name.")
@@ -1738,7 +1730,7 @@ async def on_message(message):
             data["from"] = tz_choice
             data["step"] = 2
 
-            # Ask for target timezone
+            # Build target timezone menu
             menu = "**Convert this time INTO which timezone?**\n\n"
             for num, (short, full, _) in TIMEZONES.items():
                 menu += f"{num}. **{short}** ({full})\n"
@@ -1786,9 +1778,10 @@ async def on_message(message):
             await message.channel.send(embed=embed)
             return
 
-    # Allow other commands
+    # ============================================================
+    # 3. Allow commands to run normally
+    # ============================================================
     await bot.process_commands(message)
-    
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
