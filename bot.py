@@ -8,6 +8,8 @@ from flask import Flask
 from threading import Thread
 import random  # Make sure this is at the top of your file
 from googletrans import Translator
+import pytz
+from datetime import datetime
 
 OWNER_ID = 1035911200237699072 
 ALLOWED_CHANNEL_ID = 1456526135075537019
@@ -1557,6 +1559,106 @@ async def translate_step1(ctx, *, text=None):
 
     await ctx.send(embed=embed)
 
+# ============================
+# TIMEZONE CONVERSION SYSTEM
+# ============================
+
+# Full timezone list
+TIMEZONES = {
+    1: ("EST", "Eastern Standard Time", "America/New_York"),
+    2: ("EDT", "Eastern Daylight Time", "America/New_York"),
+    3: ("CST", "Central Standard Time", "America/Chicago"),
+    4: ("CDT", "Central Daylight Time", "America/Chicago"),
+    5: ("MST", "Mountain Standard Time", "America/Denver"),
+    6: ("MDT", "Mountain Daylight Time", "America/Denver"),
+    7: ("PST", "Pacific Standard Time", "America/Los_Angeles"),
+    8: ("PDT", "Pacific Daylight Time", "America/Los_Angeles"),
+
+    9: ("UTC", "Coordinated Universal Time", "UTC"),
+    10: ("GMT", "Greenwich Mean Time", "Europe/London"),
+    11: ("CET", "Central European Time", "Europe/Berlin"),
+    12: ("CEST", "Central European Summer Time", "Europe/Berlin"),
+    13: ("EET", "Eastern European Time", "Europe/Helsinki"),
+    14: ("EEST", "Eastern European Summer Time", "Europe/Helsinki"),
+
+    15: ("IST", "India Standard Time", "Asia/Kolkata"),
+    16: ("PKT", "Pakistan Standard Time", "Asia/Karachi"),
+    17: ("BST", "Bangladesh Standard Time", "Asia/Dhaka"),
+    18: ("WIB", "Western Indonesia Time", "Asia/Jakarta"),
+    19: ("WITA", "Central Indonesia Time", "Asia/Makassar"),
+    20: ("WIT", "Eastern Indonesia Time", "Asia/Jayapura"),
+    21: ("CST-CHINA", "China Standard Time", "Asia/Shanghai"),
+    22: ("JST", "Japan Standard Time", "Asia/Tokyo"),
+    23: ("KST", "Korea Standard Time", "Asia/Seoul"),
+
+    24: ("MSK", "Moscow Standard Time", "Europe/Moscow"),
+    25: ("TRT", "Turkey Time", "Europe/Istanbul"),
+    26: ("AST", "Arabia Standard Time", "Asia/Riyadh"),
+
+    27: ("AEST", "Australian Eastern Standard Time", "Australia/Sydney"),
+    28: ("AEDT", "Australian Eastern Daylight Time", "Australia/Sydney"),
+    29: ("ACST", "Australian Central Standard Time", "Australia/Adelaide"),
+    30: ("ACDT", "Australian Central Daylight Time", "Australia/Adelaide"),
+    31: ("AWST", "Australian Western Standard Time", "Australia/Perth"),
+
+    32: ("NZST", "New Zealand Standard Time", "Pacific/Auckland"),
+    33: ("NZDT", "New Zealand Daylight Time", "Pacific/Auckland"),
+}
+
+# Reverse lookup for text input
+TZ_LOOKUP = {}
+for num, (short, full, zone) in TIMEZONES.items():
+    TZ_LOOKUP[str(num)] = num
+    TZ_LOOKUP[short.lower()] = num
+    TZ_LOOKUP[full.lower()] = num
+    TZ_LOOKUP[short.lower().replace("-", "")] = num
+    TZ_LOOKUP[full.lower().replace(" ", "")] = num
+
+pending_conversions = {}  # user_id -> {"time": ..., "step": 1/2, "from": ...}
+
+
+def parse_time_string(t):
+    """Parses 12h or 24h time formats."""
+    formats = ["%I:%M %p", "%I %p", "%H:%M", "%H"]
+    for f in formats:
+        try:
+            return datetime.strptime(t, f)
+        except:
+            pass
+    return None
+
+
+@bot.command(name="convert")
+async def convert_step1(ctx, *, time_str=None):
+    if not time_str:
+        await ctx.send("❌ Please provide a time.\nExample: `!convert 10:40 PM`")
+        return
+
+    parsed = parse_time_string(time_str)
+    if not parsed:
+        await ctx.send("❌ Invalid time format. Try things like:\n`10:40 PM`, `22:40`, `7 PM`")
+        return
+
+    pending_conversions[ctx.author.id] = {
+        "time": parsed,
+        "step": 1,
+        "from": None
+    }
+
+    # Build timezone menu
+    menu = "**What timezone is this time IN?**\n\n"
+    for num, (short, full, _) in TIMEZONES.items():
+        menu += f"{num}. **{short}** ({full})\n"
+
+    embed = discord.Embed(
+        title="🕒 Timezone Selection",
+        description=menu,
+        color=0x00aaff
+    )
+    embed.set_footer(text="Type the number or the timezone name.")
+
+    await ctx.send(embed=embed)
+
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -1611,6 +1713,80 @@ async def on_message(message):
         return
 
     # Allow other commands to work
+    await bot.process_commands(message)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    user_id = message.author.id
+
+    # TIMEZONE CONVERSION FLOW
+    if user_id in pending_conversions:
+        data = pending_conversions[user_id]
+        content = message.content.strip().lower()
+
+        # Try to match timezone
+        tz_choice = TZ_LOOKUP.get(content)
+        if not tz_choice:
+            await message.channel.send("❌ Invalid timezone. Type a number or timezone name.")
+            return
+
+        # STEP 1: Source timezone
+        if data["step"] == 1:
+            data["from"] = tz_choice
+            data["step"] = 2
+
+            # Ask for target timezone
+            menu = "**Convert this time INTO which timezone?**\n\n"
+            for num, (short, full, _) in TIMEZONES.items():
+                menu += f"{num}. **{short}** ({full})\n"
+
+            embed = discord.Embed(
+                title="🌍 Target Timezone",
+                description=menu,
+                color=0x00aaff
+            )
+            embed.set_footer(text="Type the number or the timezone name.")
+
+            await message.channel.send(embed=embed)
+            return
+
+        # STEP 2: Target timezone
+        elif data["step"] == 2:
+            from_tz = TIMEZONES[data["from"]][2]
+            to_tz = TIMEZONES[tz_choice][2]
+
+            src = pytz.timezone(from_tz)
+            dst = pytz.timezone(to_tz)
+
+            # Localize and convert
+            original = src.localize(data["time"])
+            converted = original.astimezone(dst)
+
+            # Cleanup
+            del pending_conversions[user_id]
+
+            embed = discord.Embed(
+                title="⏱️ Time Conversion Result",
+                color=0x00ff99
+            )
+            embed.add_field(
+                name="Original",
+                value=f"{original.strftime('%I:%M %p')} {TIMEZONES[data['from']][0]}",
+                inline=False
+            )
+            embed.add_field(
+                name="Converted",
+                value=f"{converted.strftime('%I:%M %p')} {TIMEZONES[tz_choice][0]}",
+                inline=False
+            )
+
+            await message.channel.send(embed=embed)
+            return
+
+    # Allow other commands
     await bot.process_commands(message)
     
 
