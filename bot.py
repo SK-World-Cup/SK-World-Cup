@@ -7,6 +7,7 @@ import json
 from flask import Flask
 from threading import Thread
 import random  # Make sure this is at the top of your file
+from googletrans import Translator
 
 OWNER_ID = 1035911200237699072 
 ALLOWED_CHANNEL_ID = 1456526135075537019
@@ -43,6 +44,9 @@ intents.message_content = True  # Required for reading message content
 bot = commands.Bot(command_prefix="!", intents=intents)
 bot.remove_command("help")  # keep this
 print("Loaded commands at import time:", list(bot.commands))
+
+translator = Translator()
+pending_translations = {}  # user_id -> text_to_translate
 
 # === GOOGLE SHEETS SETUP ===
 def setup_google_sheets():
@@ -1494,6 +1498,94 @@ async def standings(ctx):
     except Exception as e:
         print(f"❌ Error in standings command: {e}")
         await ctx.send("❌ Error retrieving SKPL standings. Please try again later.")
+
+# ============================
+# TRANSLATE COMMAND (2‑STEP)
+# ============================
+
+LANG_OPTIONS = {
+    1: ("English", "en"),
+    2: ("Spanish", "es"),
+    3: ("French", "fr"),
+    4: ("German", "de"),
+    5: ("Portuguese", "pt"),
+    6: ("Japanese", "ja"),
+    7: ("Korean", "ko"),
+    8: ("Chinese (Simplified)", "zh-cn"),
+}
+
+pending_translations = {}  # user_id -> text_to_translate
+
+
+@bot.command(name="translate")
+async def translate_step1(ctx, *, text=None):
+    """
+    Step 1: User provides text. Bot asks which language to translate into.
+    Usage: !translate "Hello, how are you"
+    """
+    if not text:
+        await ctx.send("❌ Please include text to translate.\nExample: `!translate \"Hello\"`")
+        return
+
+    # Save text for this user
+    pending_translations[ctx.author.id] = text
+
+    # Build menu
+    menu = "**What language do you want this translated into?**\n\n"
+    for num, (name, code) in LANG_OPTIONS.items():
+        menu += f"{num} — {name}\n"
+
+    embed = discord.Embed(
+        title="🌍 Translation Menu",
+        description=menu,
+        color=0x00aaff
+    )
+    embed.set_footer(text="Type the number of the language you want.")
+
+    await ctx.send(embed=embed)
+
+@bot.event
+async def on_message(message):
+    if message.author.bot:
+        return
+
+    user_id = message.author.id
+
+    # If user is choosing a translation language
+    if user_id in pending_translations:
+        content = message.content.strip()
+
+        if content.isdigit():
+            choice = int(content)
+
+            if choice in LANG_OPTIONS:
+                lang_name, lang_code = LANG_OPTIONS[choice]
+                original_text = pending_translations.pop(user_id)
+
+                try:
+                    result = translator.translate(original_text, dest=lang_code)
+
+                    embed = discord.Embed(
+                        title=f"🌐 Translated to {lang_name}",
+                        color=0x00ff99
+                    )
+                    embed.add_field(name="🔤 Original", value=original_text, inline=False)
+                    embed.add_field(name="✨ Translation", value=result.text, inline=False)
+                    embed.set_footer(text=f"Detected language: {result.src}")
+
+                    await message.channel.send(embed=embed)
+                except Exception as e:
+                    await message.channel.send("❌ Translation failed. Try again.")
+
+                return
+
+        # Invalid input
+        await message.channel.send("❌ Please type a valid number from the list.")
+        return
+
+    # Allow other commands to work
+    await bot.process_commands(message)
+    
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
