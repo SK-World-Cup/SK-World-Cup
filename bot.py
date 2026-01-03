@@ -114,9 +114,28 @@ async def help_command(ctx, command_name=None):
             inline=False
         )
 
+        embed.add_field(
+            name="🏆 SKPL",
+            value="`standings`, `team`",
+            inline=False
+        )
+
         embed.set_footer(text="Example: !help report")
         await ctx.send(embed=embed)
         return
+
+    # Per-command help
+    cmd = bot.get_command(command_name)
+    if not cmd:
+        await ctx.send(f"❌ Command `{command_name}` not found.")
+        return
+
+    embed = discord.Embed(
+        title=f"ℹ️ Help — !{cmd.name}",
+        description=cmd.help or "No description available.",
+        color=0x00ff99
+    )
+    await ctx.send(embed=embed)
 
     # Per-command help
     cmd = bot.get_command(command_name)
@@ -1331,6 +1350,128 @@ async def team(ctx, *, team_name=None):
             color=0xff0000
         )
         await ctx.send(embed=embed)
+
+@bot.command(name="standings")
+async def standings(ctx):
+    """
+    Show SKPL standings for Group A and Group B.
+    Reads from the 'SKPL Standings' worksheet.
+    """
+    if not sheet:
+        await ctx.send("❌ Google Sheets connection unavailable.")
+        return
+
+    try:
+        async with ctx.typing():
+            # Open SKPL Standings tab
+            try:
+                skpl_sheet = sheet.spreadsheet.worksheet("SKPL Standings")
+            except Exception:
+                await ctx.send("❌ Could not find a worksheet named **SKPL Standings**.")
+                return
+
+            # Helper to read a block of rows
+            def read_group(start_row, end_row):
+                teams = []
+                for row in range(start_row, end_row + 1):
+                    team = skpl_sheet.acell(f"A{row}").value
+                    gp = skpl_sheet.acell(f"C{row}").value
+                    w = skpl_sheet.acell(f"D{row}").value
+                    d = skpl_sheet.acell(f"E{row}").value
+                    l = skpl_sheet.acell(f"F{row}").value
+                    kf = skpl_sheet.acell(f"G{row}").value
+                    ka = skpl_sheet.acell(f"H{row}").value
+                    kdr = skpl_sheet.acell(f"I{row}").value
+                    ppg = skpl_sheet.acell(f"J{row}").value
+                    pts = skpl_sheet.acell(f"K{row}").value
+                    abbr = skpl_sheet.acell(f"M{row}").value
+
+                    if not team:
+                        continue
+
+                    # Convert numbers safely
+                    def safe_int(x):
+                        try: return int(x)
+                        except: return 0
+
+                    def safe_float(x):
+                        try: return float(x)
+                        except: return 0.0
+
+                    gp = safe_int(gp)
+                    w = safe_int(w)
+                    d = safe_int(d)
+                    l = safe_int(l)
+                    kf = safe_int(kf)
+                    ka = safe_int(ka)
+                    pts = safe_int(pts)
+                    kdr = safe_float(kdr)
+                    ppg = safe_float(ppg)
+
+                    teams.append({
+                        "team": team,
+                        "abbr": abbr,
+                        "gp": gp,
+                        "w": w,
+                        "d": d,
+                        "l": l,
+                        "kf": kf,
+                        "ka": ka,
+                        "kdr": kdr,
+                        "ppg": ppg,
+                        "pts": pts
+                    })
+
+                # Sort by: Points → Wins → KDR
+                teams.sort(key=lambda x: (x["pts"], x["w"], x["kdr"]), reverse=True)
+                return teams
+
+            # Read both groups
+            group_a = read_group(3, 7)
+            group_b = read_group(12, 16)
+
+            # Build embed for Group A
+            embed_a = discord.Embed(
+                title="🏆 SKPL Standings — Group A",
+                color=0x00aaff
+            )
+
+            for i, t in enumerate(group_a, 1):
+                embed_a.add_field(
+                    name=f"{i}. {t['team']} ({t['abbr']})",
+                    value=(
+                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
+                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
+                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                        f"KDR: {t['kdr']:.2f}"
+                    ),
+                    inline=False
+                )
+
+            # Build embed for Group B
+            embed_b = discord.Embed(
+                title="🏆 SKPL Standings — Group B",
+                color=0xff8800
+            )
+
+            for i, t in enumerate(group_b, 1):
+                embed_b.add_field(
+                    name=f"{i}. {t['team']} ({t['abbr']})",
+                    value=(
+                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
+                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
+                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                        f"KDR: {t['kdr']:.2f}"
+                    ),
+                    inline=False
+                )
+
+            await ctx.send(embed=embed_a)
+            await ctx.send(embed=embed_b)
+
+    except Exception as e:
+        print(f"❌ Error in standings command: {e}")
+        await ctx.send("❌ Error retrieving SKPL standings. Please try again later.")
 
 # === KEEP-ALIVE SERVER ===
 app = Flask(__name__)
