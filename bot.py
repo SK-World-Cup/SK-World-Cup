@@ -124,6 +124,12 @@ async def help_command(ctx, command_name=None):
             inline=False
         )
 
+        embed.add_field(
+            name="🛠️ Utilities",
+            value="`translate`",
+            inline=False
+        )
+
         embed.set_footer(text="Example: !help report")
         await ctx.send(embed=embed)
         return
