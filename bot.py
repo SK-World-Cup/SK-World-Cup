@@ -1788,13 +1788,9 @@ async def on_message(message):
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
     bot_token = os.getenv("BOT_TOKEN", "")
-
     if not bot_token:
         print("❌ BOT_TOKEN missing")
         exit(1)
-
-    print("🚀 Starting keep-alive web server...")
-    keep_alive()
 
     print("🤖 Starting Discord bot...")
     bot.run(bot_token)
