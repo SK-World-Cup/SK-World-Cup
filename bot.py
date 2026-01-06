@@ -4,8 +4,6 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
 import json
-from flask import Flask
-from threading import Thread
 import random  # Make sure this is at the top of your file
 from googletrans import Translator
 import pytz
@@ -28,17 +26,6 @@ def owner_or_channel():
         return False
 
     return commands.check(predicate)
-
-# === KEEP-ALIVE SERVER ===
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Discord Bot is running! 🤖"
-
-@app.route('/health')
-def health():
-    return {"status": "healthy", "bot": "1v1 Gaming Stats Bot"}
 
 # === DISCORD BOT SETUP ===
 intents = discord.Intents.default()
@@ -1797,32 +1784,6 @@ async def on_message(message):
     # 3. Allow commands to run normally
     # ============================================================
     await bot.process_commands(message)
-
-# === KEEP-ALIVE SERVER ===
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Discord Bot is running! 🤖"
-
-@app.route('/health')
-def health():
-    return {"status": "healthy", "bot": "1v1 Gaming Stats Bot"}
-
-# === STARTUP FIX ===
-from threading import Thread
-
-def run_web():
-    app.run(
-        host="0.0.0.0",
-        port=10000,
-        debug=False,
-        use_reloader=False
-    )
-
-def keep_alive():
-    thread = Thread(target=run_web)
-    thread.start()
 
 # === MAIN EXECUTION ===
 if __name__ == "__main__":
