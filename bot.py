@@ -1156,7 +1156,7 @@ async def report(ctx, player1=None, score=None, player2=None):
         print(f"Error in !report: {e}")
 
 @bot.command(name="reviewreports")
-@owner_or_channel()   # ⬅️ Anyone in allowed channel OR owner can run the command
+@owner_or_channel()  # Owner OR anyone in allowed channel
 async def reviewreports(ctx):
     try:
         match_sheet = sheet.spreadsheet.worksheet("Match History")
@@ -1166,7 +1166,7 @@ async def reviewreports(ctx):
             await ctx.send("📭 No match reports to review.")
             return
 
-        for i, reg in enumerate(rows, start=2):  # row 1 is headers
+        for i, reg in enumerate(rows, start=2):  # row 1 = headers
             player1 = reg["Player 1"]
             score = reg["Score"]
             player2 = reg["Player 2"]
@@ -1176,15 +1176,17 @@ async def reviewreports(ctx):
                 continue
 
             await ctx.send(
-                f"📋 Reported match: **{player1} {score} {player2}**\n"
-                f"Type `1` to accept (mark Yes) or `2` to deny (delete)."
+                f"📋 Reported match:\n"
+                f"**{player1} {score} {player2}**\n\n"
+                f"`1` = Accept\n"
+                f"`2` = Deny (delete)\n"
+                f"`3` = Edit (save but keep pending)"
             )
 
-            # Allow OWNER or ANYONE in the allowed channel to approve/deny
-            def check(m):
+            def decision_check(m):
                 return (
                     m.channel.id == ctx.channel.id
-                    and m.content in ["1", "2"]
+                    and m.content in ["1", "2", "3"]
                     and (
                         m.author.id == OWNER_ID or
                         m.channel.id == ALLOWED_CHANNEL_ID
@@ -1192,19 +1194,86 @@ async def reviewreports(ctx):
                 )
 
             try:
-                reply = await bot.wait_for("message", check=check, timeout=60.0)
+                reply = await bot.wait_for(
+                    "message",
+                    check=decision_check,
+                    timeout=60.0
+                )
 
+                # ACCEPT
                 if reply.content == "1":
                     match_sheet.update_cell(i, 5, "Yes")
-                    await ctx.send(f"✅ Accepted match: {player1} {score} {player2}")
-                else:
+                    await ctx.send(
+                        f"✅ Accepted match:\n"
+                        f"**{player1} {score} {player2}**"
+                    )
+
+                # DENY
+                elif reply.content == "2":
                     match_sheet.delete_rows(i)
-                    await ctx.send(f"❌ Denied match: {player1} {score} {player2} (row deleted)")
+                    await ctx.send(
+                        f"❌ Denied match (row deleted):\n"
+                        f"**{player1} {score} {player2}**"
+                    )
+
+                # EDIT (SAVE ONLY)
+                elif reply.content == "3":
+                    await ctx.send(
+                        "✏️ Send the corrected match in this format:\n"
+                        "`Player1 Score Player2`\n"
+                        "Example: `Kat 3-1 Nova`"
+                    )
+
+                    def edit_check(m):
+                        return (
+                            m.channel.id == ctx.channel.id
+                            and (
+                                m.author.id == OWNER_ID or
+                                m.channel.id == ALLOWED_CHANNEL_ID
+                            )
+                        )
+
+                    try:
+                        edit_msg = await bot.wait_for(
+                            "message",
+                            check=edit_check,
+                            timeout=90.0
+                        )
+
+                        parts = edit_msg.content.strip().split()
+                        if len(parts) < 3:
+                            await ctx.send(
+                                "❌ Invalid format. Edit cancelled."
+                            )
+                            continue
+
+                        new_player1 = parts[0]
+                        new_score = parts[1]
+                        new_player2 = " ".join(parts[2:])
+
+                        # Update row but KEEP pending
+                        match_sheet.update_cell(i, 1, new_player1)
+                        match_sheet.update_cell(i, 2, new_score)
+                        match_sheet.update_cell(i, 3, new_player2)
+                        match_sheet.update_cell(i, 5, "Pending")
+
+                        await ctx.send(
+                            f"💾 Edit saved (still pending):\n"
+                            f"**{new_player1} {new_score} {new_player2}**\n"
+                            f"Run `reviewreports` again to accept."
+                        )
+
+                    except asyncio.TimeoutError:
+                        await ctx.send(
+                            "⏳ Edit timed out — moving to next report."
+                        )
 
             except asyncio.TimeoutError:
-                await ctx.send("⏳ Timeout — moving to next report.")
+                await ctx.send(
+                    "⏳ No response — moving to next report."
+                )
 
-        await ctx.send("📋 All pending match reports processed.")
+        await ctx.send("📋 Finished processing pending match reports.")
 
     except Exception as e:
         await ctx.send("❌ Error accessing Match History sheet.")
