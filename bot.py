@@ -1563,6 +1563,181 @@ async def standings(ctx):
         print(f"❌ Error in standings command: {e}")
         await ctx.send("❌ Error retrieving SKPL standings. Please try again later.")
 
+@bot.command(name="changename")
+async def changename(ctx):
+    try:
+        reg_sheet = sheet.spreadsheet.worksheet("Pending Registrations")
+        name_sheet = sheet.spreadsheet.worksheet("Pending Name Changes")
+
+        user_id = str(ctx.author.id)
+        reg_rows = reg_sheet.get_all_records()
+
+        registered_name = None
+        is_registered = False
+
+        for r in reg_rows:
+            if str(r["Discord ID"]) == user_id and r["Status"].lower() == "accepted":
+                registered_name = r["Requested Name"]
+                is_registered = True
+                break
+
+        await ctx.author.send("✏️ What name do you want to change **to**?")
+        reply = await bot.wait_for(
+            "message",
+            check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
+            timeout=90
+        )
+
+        new_name = reply.content.strip()
+
+        # REGISTERED USERS → AUTO-ACCEPT
+        if is_registered or ctx.author.id == OWNER_ID:
+            old_name = registered_name
+
+            sheet1 = sheet.spreadsheet.worksheet("Sheet1")
+            mh = sheet.spreadsheet.worksheet("Match History")
+
+            # Update Sheet1
+            col_a = sheet1.col_values(1)
+            for i, val in enumerate(col_a, start=1):
+                if val == old_name:
+                    sheet1.update_cell(i, 1, new_name)
+
+            # Update Match History (A & C)
+            mh_rows = mh.get_all_values()
+            for i, row in enumerate(mh_rows, start=1):
+                if row[0] == old_name:
+                    mh.update_cell(i, 1, new_name)
+                if row[2] == old_name:
+                    mh.update_cell(i, 3, new_name)
+
+            await ctx.author.send(
+                f"✅ Name changed successfully:\n"
+                f"**{old_name} → {new_name}**"
+            )
+            return
+
+        # UNREGISTERED USERS → ASK FOR OLD NAME + QUEUE
+        await ctx.author.send("❓ What is your **current** name on record?")
+        old_reply = await bot.wait_for(
+            "message",
+            check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
+            timeout=90
+        )
+
+        old_name = old_reply.content.strip()
+
+        name_sheet.append_row([
+            user_id,
+            old_name,
+            new_name,
+            "Pending"
+        ])
+
+        await ctx.author.send(
+            "📨 Name change request submitted.\n"
+            "It will be reviewed by an admin."
+        )
+
+    except asyncio.TimeoutError:
+        await ctx.author.send("⏳ Timed out. Please run `!changename` again.")
+    except Exception as e:
+        print(f"Error in changename: {e}")
+
+@bot.command(name="reviewnames")
+@owner_or_channel()
+async def reviewnames(ctx):
+    try:
+        name_sheet = sheet.spreadsheet.worksheet("Pending Name Changes")
+        sheet1 = sheet.spreadsheet.worksheet("Sheet1")
+        mh = sheet.spreadsheet.worksheet("Match History")
+
+        rows = name_sheet.get_all_records()
+        if not rows:
+            await ctx.send("📭 No pending name changes.")
+            return
+
+        for i, r in enumerate(rows, start=2):
+            if r["Status"].lower() != "pending":
+                continue
+
+            user_id = r["Discord ID"]
+            old_name = r["Old Name"]
+            new_name = r["Requested New Name"]
+
+            await ctx.send(
+                f"📋 Name change request:\n"
+                f"**{old_name} → {new_name}**\n\n"
+                f"`1` Accept\n"
+                f"`2` Deny\n"
+                f"`3` Edit"
+            )
+
+            def check(m):
+                return (
+                    m.channel.id == ctx.channel.id
+                    and m.content in ["1", "2", "3"]
+                    and (
+                        m.author.id == OWNER_ID or
+                        m.channel.id == ALLOWED_CHANNEL_ID
+                    )
+                )
+
+            try:
+                reply = await bot.wait_for("message", check=check, timeout=60)
+
+                # ACCEPT
+                if reply.content == "1":
+                    # Sheet1
+                    col_a = sheet1.col_values(1)
+                    for x, val in enumerate(col_a, start=1):
+                        if val == old_name:
+                            sheet1.update_cell(x, 1, new_name)
+
+                    # Match History
+                    mh_rows = mh.get_all_values()
+                    for y, row in enumerate(mh_rows, start=1):
+                        if row[0] == old_name:
+                            mh.update_cell(y, 1, new_name)
+                        if row[2] == old_name:
+                            mh.update_cell(y, 3, new_name)
+
+                    name_sheet.update_cell(i, 4, "Accepted")
+                    await ctx.send(f"✅ Accepted: **{old_name} → {new_name}**")
+
+                # DENY
+                elif reply.content == "2":
+                    name_sheet.delete_rows(i)
+                    await ctx.send(f"❌ Denied request for **{old_name}**")
+
+                # EDIT
+                elif reply.content == "3":
+                    await ctx.send(
+                        "✏️ Send corrected format:\n"
+                        "`OldName NewName`"
+                    )
+
+                    edit = await bot.wait_for("message", timeout=60)
+                    parts = edit.content.split()
+                    if len(parts) != 2:
+                        await ctx.send("❌ Invalid format. Skipped.")
+                        continue
+
+                    name_sheet.update_cell(i, 2, parts[0])
+                    name_sheet.update_cell(i, 3, parts[1])
+                    name_sheet.update_cell(i, 4, "Pending")
+
+                    await ctx.send("💾 Edit saved (still pending).")
+
+            except asyncio.TimeoutError:
+                await ctx.send("⏳ Timed out — moving on.")
+
+        await ctx.send("📋 Finished reviewing name changes.")
+
+    except Exception as e:
+        await ctx.send("❌ Error reviewing name changes.")
+        print(f"Error in reviewnames: {e}")
+
 # ============================
 # TRANSLATE COMMAND (2‑STEP)
 # ============================
