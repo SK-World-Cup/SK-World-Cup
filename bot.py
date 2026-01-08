@@ -1572,40 +1572,41 @@ async def changename(ctx):
         user_id = str(ctx.author.id)
         reg_rows = reg_sheet.get_all_records()
 
-        registered_name = None
         is_registered = False
+        registered_name = None
 
+        # Check registration
         for r in reg_rows:
             if str(r["Discord ID"]) == user_id and r["Status"].lower() == "accepted":
-                registered_name = r["Requested Name"]
                 is_registered = True
+                registered_name = r["Requested Name"]
                 break
 
+        # Ask for NEW name
         await ctx.author.send("✏️ What name do you want to change **to**?")
         reply = await bot.wait_for(
             "message",
             check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
             timeout=90
         )
-
         new_name = reply.content.strip()
 
+        # ─────────────────────────────
         # REGISTERED USERS → AUTO-ACCEPT
-        if is_registered or ctx.author.id == OWNER_ID:
+        # ─────────────────────────────
+        if is_registered:
             old_name = registered_name
 
             sheet1 = sheet.spreadsheet.worksheet("Sheet1")
             mh = sheet.spreadsheet.worksheet("Match History")
 
-            # Update Sheet1
-            col_a = sheet1.col_values(1)
-            for i, val in enumerate(col_a, start=1):
+            # Update Sheet1 (Column A)
+            for i, val in enumerate(sheet1.col_values(1), start=1):
                 if val == old_name:
                     sheet1.update_cell(i, 1, new_name)
 
-            # Update Match History (A & C)
-            mh_rows = mh.get_all_values()
-            for i, row in enumerate(mh_rows, start=1):
+            # Update Match History (Column A & C)
+            for i, row in enumerate(mh.get_all_values(), start=1):
                 if row[0] == old_name:
                     mh.update_cell(i, 1, new_name)
                 if row[2] == old_name:
@@ -1617,14 +1618,15 @@ async def changename(ctx):
             )
             return
 
-        # UNREGISTERED USERS → ASK FOR OLD NAME + QUEUE
+        # ─────────────────────────────
+        # UNREGISTERED USERS → QUEUE
+        # ─────────────────────────────
         await ctx.author.send("❓ What is your **current** name on record?")
         old_reply = await bot.wait_for(
             "message",
             check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel),
             timeout=90
         )
-
         old_name = old_reply.content.strip()
 
         name_sheet.append_row([
@@ -1661,7 +1663,6 @@ async def reviewnames(ctx):
             if r["Status"].lower() != "pending":
                 continue
 
-            user_id = r["Discord ID"]
             old_name = r["Old Name"]
             new_name = r["Requested New Name"]
 
@@ -1689,14 +1690,12 @@ async def reviewnames(ctx):
                 # ACCEPT
                 if reply.content == "1":
                     # Sheet1
-                    col_a = sheet1.col_values(1)
-                    for x, val in enumerate(col_a, start=1):
+                    for x, val in enumerate(sheet1.col_values(1), start=1):
                         if val == old_name:
                             sheet1.update_cell(x, 1, new_name)
 
                     # Match History
-                    mh_rows = mh.get_all_values()
-                    for y, row in enumerate(mh_rows, start=1):
+                    for y, row in enumerate(mh.get_all_values(), start=1):
                         if row[0] == old_name:
                             mh.update_cell(y, 1, new_name)
                         if row[2] == old_name:
@@ -1712,13 +1711,11 @@ async def reviewnames(ctx):
 
                 # EDIT
                 elif reply.content == "3":
-                    await ctx.send(
-                        "✏️ Send corrected format:\n"
-                        "`OldName NewName`"
-                    )
+                    await ctx.send("✏️ Send corrected format:\n`OldName NewName`")
 
                     edit = await bot.wait_for("message", timeout=60)
                     parts = edit.content.split()
+
                     if len(parts) != 2:
                         await ctx.send("❌ Invalid format. Skipped.")
                         continue
