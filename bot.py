@@ -76,77 +76,79 @@ sheet = setup_google_sheets()
 # === BOT COMMANDS ===
 @bot.command(name="help")
 async def help_command(ctx, command_name=None):
-    if not command_name:
+    # If user requested help for a specific command
+    if command_name:
+        cmd = bot.get_command(command_name)
+        if not cmd:
+            await ctx.send(f"❌ Command `{command_name}` not found.")
+            return
+
         embed = discord.Embed(
-            title="🤖 1v1 Gaming Stats Bot — Help",
-            description="Use `!help <command>` for details",
-            color=0x0099ff
+            title=f"ℹ️ Help — !{cmd.name}",
+            description=cmd.help or "No description available.",
+            color=0x00ff99
         )
-
-        embed.add_field(
-            name="📊 Stats",
-            value="`playerelo`, `stats`, `elo`, `top10`, `headtohead`, `gamesbyplayer`",
-            inline=False
-        )
-
-        embed.add_field(
-            name="📝 Reporting",
-            value="`report`, `reviewreports`",
-            inline=False
-        )
-
-        embed.add_field(
-            name="👤 Registration",
-            value="`register`, `doadmin`",
-            inline=False
-        )
-
-        embed.add_field(
-            name="🎭 Fun",
-            value="`WHOSYOURDADDY`, `moosecite`",
-            inline=False
-        )
-
-        embed.add_field(
-            name="🏆 League 2025-2026",
-            value="`standings`, `team`",
-            inline=False
-        )
-
-        embed.add_field(
-            name="🛠️ Utilities",
-            value="`translate`, `convert`",
-            inline=False
-        )
-
-        embed.set_footer(text="Example: !help report")
         await ctx.send(embed=embed)
         return
 
-    # Per-command help
-    cmd = bot.get_command(command_name)
-    if not cmd:
-        await ctx.send(f"❌ Command `{command_name}` not found.")
-        return
-
+    # === MAIN HELP MENU ===
     embed = discord.Embed(
-        title=f"ℹ️ Help — !{cmd.name}",
-        description=cmd.help or "No description available.",
-        color=0x00ff99
+        title="🤖 1v1 Gaming Stats Bot — Help",
+        description="Use `!help <command>` for details",
+        color=0x0099ff
     )
-    await ctx.send(embed=embed)
 
-    # Per-command help
-    cmd = bot.get_command(command_name)
-    if not cmd:
-        await ctx.send(f"❌ Command `{command_name}` not found.")
-        return
-
-    embed = discord.Embed(
-        title=f"ℹ️ Help — !{cmd.name}",
-        description=cmd.help or "No description available.",
-        color=0x00ff99
+    # Stats
+    embed.add_field(
+        name="📊 Stats",
+        value="`playerelo`, `stats`, `elo`, `top10`, `headtohead`, `gamesbyplayer`",
+        inline=False
     )
+
+    # Reporting
+    embed.add_field(
+        name="📝 Reporting",
+        value="`report`, `reviewreports`",
+        inline=False
+    )
+
+    # Registration
+    embed.add_field(
+        name="👤 Registration",
+        value="`register`, `doadmin`",
+        inline=False
+    )
+
+    # Fun
+    embed.add_field(
+        name="🎭 Fun",
+        value="`WHOSYOURDADDY`, `moosecite`",
+        inline=False
+    )
+
+    # League
+    embed.add_field(
+        name="🏆 League 2025-2026",
+        value="`standings`, `team`",
+        inline=False
+    )
+
+    # Utilities
+    embed.add_field(
+        name="🛠️ Utilities",
+        value="`translate`, `convert`",
+        inline=False
+    )
+
+    # === ADMIN TAB (ONLY SHOW IF IN ADMIN CHANNEL) ===
+    if ctx.channel.id == ALLOWED_CHANNEL_ID:
+        embed.add_field(
+            name="🔐 Admin",
+            value="`doadmin`, `reviewreports`, `reviewnames`",
+            inline=False
+        )
+
+    embed.set_footer(text="Example: !help report")
     await ctx.send(embed=embed)
 
 @bot.command(name='playerelo', aliases=['stats', 'elo'])
