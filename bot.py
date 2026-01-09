@@ -108,7 +108,7 @@ async def help_command(ctx, command_name=None):
     # Reporting
     embed.add_field(
         name="📝 Reporting",
-        value="`report`, `reviewreports`",
+        value="`report`, `reviewreports`, `changename`",
         inline=False
     )
 
