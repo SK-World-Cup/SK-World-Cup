@@ -2037,3 +2037,7 @@ if __name__ == "__main__":
 
     print("🤖 Starting Discord bot...")
     bot.run(bot_token)
+
+# This allows the file to be imported without running the bot
+if __name__ == "__main__":
+    main()
