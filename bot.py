@@ -1473,7 +1473,7 @@ async def standings(ctx):
             # Helper to parse rows from memory
             def parse_group(start_row, end_row):
                 teams = []
-                for r in range(start_row - 1, end_row):  # convert to 0-index
+                for r in range(start_row - 1, end_row):
                     row = data[r]
 
                     team = row[0] if len(row) > 0 else ""
@@ -1491,7 +1491,6 @@ async def standings(ctx):
                     if not team:
                         continue
 
-                    # Safe conversions
                     def to_int(x):
                         try: return int(x)
                         except: return 0
@@ -1514,7 +1513,6 @@ async def standings(ctx):
                         "pts": to_int(pts)
                     })
 
-                # Sort by PTS → W → KDR
                 teams.sort(key=lambda x: (x["pts"], x["w"], x["kdr"]), reverse=True)
                 return teams
 
@@ -1522,44 +1520,32 @@ async def standings(ctx):
             group_a = parse_group(3, 7)
             group_b = parse_group(12, 16)
 
-            # Build embed for Group A
-            embed_a = discord.Embed(
-                title="🏆 SKPL Standings — Group A",
-                color=0x00aaff
-            )
-
+            # Build plain text for Group A
+            text_a = "🏆 **SKPL Standings — Group A**\n```\n"
             for i, t in enumerate(group_a, 1):
-                embed_a.add_field(
-                    name=f"{i}. {t['team']} ({t['abbr']})",
-                    value=(
-                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
-                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
-                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                        f"KDR: {t['kdr']:.2f}"
-                    ),
-                    inline=False
+                text_a += (
+                    f"{i}. {t['team']} ({t['abbr']})\n"
+                    f"PTS: {t['pts']} | PPG: {t['ppg']:.2f}\n"
+                    f"GP: {t['gp']}  W: {t['w']}  D: {t['d']}  L: {t['l']}\n"
+                    f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                    f"KDR: {t['kdr']:.2f}\n\n"
                 )
+            text_a += "```"
 
-            # Build embed for Group B
-            embed_b = discord.Embed(
-                title="🏆 SKPL Standings — Group B",
-                color=0xff8800
-            )
-
+            # Build plain text for Group B
+            text_b = "🏆 **SKPL Standings — Group B**\n```\n"
             for i, t in enumerate(group_b, 1):
-                embed_b.add_field(
-                    name=f"{i}. {t['team']} ({t['abbr']})",
-                    value=(
-                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
-                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
-                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                        f"KDR: {t['kdr']:.2f}"
-                    ),
-                    inline=False
+                text_b += (
+                    f"{i}. {t['team']} ({t['abbr']})\n"
+                    f"PTS: {t['pts']} | PPG: {t['ppg']:.2f}\n"
+                    f"GP: {t['gp']}  W: {t['w']}  D: {t['d']}  L: {t['l']}\n"
+                    f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                    f"KDR: {t['kdr']:.2f}\n\n"
                 )
+            text_b += "```"
 
-            await ctx.send(embed=embed_a)
-            await ctx.send(embed=embed_b)
+            await ctx.send(text_a)
+            await ctx.send(text_b)
 
     except Exception as e:
         print(f"❌ Error in standings command: {e}")
