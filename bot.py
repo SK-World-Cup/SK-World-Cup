@@ -1464,7 +1464,7 @@ async def standings(ctx):
             try:
                 skpl_sheet = sheet.spreadsheet.worksheet("SKPL Standings")
             except Exception:
-                await ctx.send("❌ Could not find a worksheet named **SKPL Standings**.")
+                await ctx.send("❌ Could not find a worksheet named SKPL Standings.")
                 return
 
             # ONE API CALL — get entire sheet
@@ -1513,6 +1513,7 @@ async def standings(ctx):
                         "pts": to_int(pts)
                     })
 
+                # Sort by PTS → W → KDR
                 teams.sort(key=lambda x: (x["pts"], x["w"], x["kdr"]), reverse=True)
                 return teams
 
@@ -1520,28 +1521,46 @@ async def standings(ctx):
             group_a = parse_group(3, 7)
             group_b = parse_group(12, 16)
 
-            # Build plain text for Group A
-            text_a = "🏆 **SKPL Standings — Group A**\n```\n"
+            # Build plain text leaderboard for Group A
+            text_a = "SKPL Standings — Group A\n"
+            text_a += "```\n"
+            text_a += f"{'Rank':<4} | {'Team':<12} | {'PTS':<4} | {'GP':<4} | {'W':<4} | {'D':<4} | {'L':<4} | {'KF':<5} | {'KA':<5} | {'KDR'}\n"
+
             for i, t in enumerate(group_a, 1):
                 text_a += (
-                    f"{i}. {t['team']} ({t['abbr']})\n"
-                    f"PTS: {t['pts']} | PPG: {t['ppg']:.2f}\n"
-                    f"GP: {t['gp']}  W: {t['w']}  D: {t['d']}  L: {t['l']}\n"
-                    f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                    f"KDR: {t['kdr']:.2f}\n\n"
+                    f"{i:<4} | "
+                    f"{t['team']:<12} | "
+                    f"{t['pts']:<4} | "
+                    f"{t['gp']:<4} | "
+                    f"{t['w']:<4} | "
+                    f"{t['d']:<4} | "
+                    f"{t['l']:<4} | "
+                    f"{t['kf']:<5} | "
+                    f"{t['ka']:<5} | "
+                    f"{t['kdr']:.3f}\n"
                 )
+
             text_a += "```"
 
-            # Build plain text for Group B
-            text_b = "🏆 **SKPL Standings — Group B**\n```\n"
+            # Build plain text leaderboard for Group B
+            text_b = "SKPL Standings — Group B\n"
+            text_b += "```\n"
+            text_b += f"{'Rank':<4} | {'Team':<12} | {'PTS':<4} | {'GP':<4} | {'W':<4} | {'D':<4} | {'L':<4} | {'KF':<5} | {'KA':<5} | {'KDR'}\n"
+
             for i, t in enumerate(group_b, 1):
                 text_b += (
-                    f"{i}. {t['team']} ({t['abbr']})\n"
-                    f"PTS: {t['pts']} | PPG: {t['ppg']:.2f}\n"
-                    f"GP: {t['gp']}  W: {t['w']}  D: {t['d']}  L: {t['l']}\n"
-                    f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                    f"KDR: {t['kdr']:.2f}\n\n"
+                    f"{i:<4} | "
+                    f"{t['team']:<12} | "
+                    f"{t['pts']:<4} | "
+                    f"{t['gp']:<4} | "
+                    f"{t['w']:<4} | "
+                    f"{t['d']:<4} | "
+                    f"{t['l']:<4} | "
+                    f"{t['kf']:<5} | "
+                    f"{t['ka']:<5} | "
+                    f"{t['kdr']:.3f}\n"
                 )
+
             text_b += "```"
 
             await ctx.send(text_a)
