@@ -1451,8 +1451,7 @@ async def team(ctx, *, team_name=None):
 @bot.command(name="standings")
 async def standings(ctx):
     """
-    Show SKPL standings for Group A and Group B.
-    Optimized: Only ONE Google Sheets API call.
+    Show SKPL standings for Group A and Group B in table format.
     """
     if not sheet:
         await ctx.send("❌ Google Sheets connection unavailable.")
@@ -1467,13 +1466,13 @@ async def standings(ctx):
                 await ctx.send("❌ Could not find a worksheet named **SKPL Standings**.")
                 return
 
-            # ONE API CALL — get entire sheet
+            # Get all data
             data = skpl_sheet.get_all_values()
 
-            # Helper to parse rows from memory
+            # Helper to parse rows
             def parse_group(start_row, end_row):
                 teams = []
-                for r in range(start_row - 1, end_row):  # convert to 0-index
+                for r in range(start_row - 1, end_row):
                     row = data[r]
 
                     team = row[0] if len(row) > 0 else ""
@@ -1522,44 +1521,49 @@ async def standings(ctx):
             group_a = parse_group(3, 7)
             group_b = parse_group(12, 16)
 
-            # Build embed for Group A
-            embed_a = discord.Embed(
-                title="🏆 SKPL Standings — Group A",
-                color=0x00aaff
-            )
+            # Function to create table string
+            def create_table(teams, group_name):
+                # Create header
+                table = f"```\n{'='*80}\n"
+                table += f"SKPL STANDINGS — {group_name}\n"
+                table += f"{'='*80}\n"
+                table += "Rank | Team Name            | P    | W   | D   | L   | GF   | GA   | KDR    | PPG\n"
+                table += f"{'-'*80}\n"
+                
+                # Add each team
+                for i, t in enumerate(teams, 1):
+                    # Truncate team name if too long
+                    team_name = t['team'][:20] if len(t['team']) > 20 else t['team']
+                    # Pad team name
+                    team_name = team_name.ljust(20)
+                    
+                    # Format each column
+                    rank = str(i).rjust(2)
+                    pts = str(t['pts']).rjust(4)
+                    wins = str(t['w']).rjust(3)
+                    draws = str(t['d']).rjust(3)
+                    losses = str(t['l']).rjust(3)
+                    gf = str(t['kf']).rjust(4)  # Kills For = GF
+                    ga = str(t['ka']).rjust(4)  # Kills Against = GA
+                    kdr = f"{t['kdr']:.3f}".rjust(6)
+                    ppg = f"{t['ppg']:.3f}".rjust(6)
+                    
+                    table += f"{rank}   | {team_name} | {pts} | {wins} | {draws} | {losses} | {gf} | {ga} | {kdr} | {ppg}\n"
+                
+                table += f"{'='*80}\n```"
+                return table
 
-            for i, t in enumerate(group_a, 1):
-                embed_a.add_field(
-                    name=f"{i}. {t['team']} ({t['abbr']})",
-                    value=(
-                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
-                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
-                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                        f"KDR: {t['kdr']:.2f}"
-                    ),
-                    inline=False
-                )
-
-            # Build embed for Group B
-            embed_b = discord.Embed(
-                title="🏆 SKPL Standings — Group B",
-                color=0xff8800
-            )
-
-            for i, t in enumerate(group_b, 1):
-                embed_b.add_field(
-                    name=f"{i}. {t['team']} ({t['abbr']})",
-                    value=(
-                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
-                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
-                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
-                        f"KDR: {t['kdr']:.2f}"
-                    ),
-                    inline=False
-                )
-
-            await ctx.send(embed=embed_a)
-            await ctx.send(embed=embed_b)
+            # Send Group A
+            if group_a:
+                await ctx.send(create_table(group_a, "GROUP A"))
+            else:
+                await ctx.send("No data found for Group A.")
+            
+            # Send Group B
+            if group_b:
+                await ctx.send(create_table(group_b, "GROUP B"))
+            else:
+                await ctx.send("No data found for Group B.")
 
     except Exception as e:
         print(f"❌ Error in standings command: {e}")
