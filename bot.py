@@ -1458,50 +1458,38 @@ async def standings(ctx):
         await ctx.send("❌ Google Sheets connection unavailable.")
         return
 
-    # Helper to safely send long messages
-    async def send_long(ctx, text):
-        chunks = [text[i:i+1900] for i in range(0, len(text), 1900)]
-        for c in chunks:
-            await ctx.send(c)
-
     try:
         async with ctx.typing():
             # Open SKPL Standings tab
             try:
                 skpl_sheet = sheet.spreadsheet.worksheet("SKPL Standings")
             except Exception:
-                await ctx.send("❌ Could not find a worksheet named SKPL Standings.")
+                await ctx.send("❌ Could not find a worksheet named **SKPL Standings**.")
                 return
 
+            # ONE API CALL — get entire sheet
             data = skpl_sheet.get_all_values()
 
             # Helper to parse rows from memory
             def parse_group(start_row, end_row):
                 teams = []
-                for r in range(start_row - 1, end_row):
-                    if r >= len(data):
-                        continue
-
+                for r in range(start_row - 1, end_row):  # convert to 0-index
                     row = data[r]
 
-                    # Safe getters
-                    def get(i, default="0"):
-                        return row[i] if i < len(row) and row[i] else default
+                    team = row[0] if len(row) > 0 else ""
+                    gp   = row[2] if len(row) > 2 else "0"
+                    w    = row[3] if len(row) > 3 else "0"
+                    d    = row[4] if len(row) > 4 else "0"
+                    l    = row[5] if len(row) > 5 else "0"
+                    kf   = row[6] if len(row) > 6 else "0"
+                    ka   = row[7] if len(row) > 7 else "0"
+                    kdr  = row[8] if len(row) > 8 else "0"
+                    ppg  = row[9] if len(row) > 9 else "0"
+                    pts  = row[10] if len(row) > 10 else "0"
+                    abbr = row[12] if len(row) > 12 else ""
 
-                    team = get(0, "")
                     if not team:
                         continue
-
-                    gp   = get(2)
-                    w    = get(3)
-                    d    = get(4)
-                    l    = get(5)
-                    kf   = get(6)
-                    ka   = get(7)
-                    kdr  = get(8)
-                    ppg  = get(9)
-                    pts  = get(10)
-                    abbr = get(12, "")
 
                     # Safe conversions
                     def to_int(x):
@@ -1526,6 +1514,7 @@ async def standings(ctx):
                         "pts": to_int(pts)
                     })
 
+                # Sort by PTS → W → KDR
                 teams.sort(key=lambda x: (x["pts"], x["w"], x["kdr"]), reverse=True)
                 return teams
 
@@ -1533,49 +1522,44 @@ async def standings(ctx):
             group_a = parse_group(3, 7)
             group_b = parse_group(12, 16)
 
-            # Build plain text leaderboard for Group A
-            text_a = "SKPL Standings — Group A\n```\n"
-            text_a += f"{'Rank':<4} | {'Team':<12} | {'PTS':<4} | {'GP':<4} | {'W':<4} | {'D':<4} | {'L':<4} | {'KF':<5} | {'KA':<5} | {'KDR'}\n"
+            # Build embed for Group A
+            embed_a = discord.Embed(
+                title="🏆 SKPL Standings — Group A",
+                color=0x00aaff
+            )
 
             for i, t in enumerate(group_a, 1):
-                text_a += (
-                    f"{i:<4} | "
-                    f"{t['team'][:12]:<12} | "
-                    f"{t['pts']:<4} | "
-                    f"{t['gp']:<4} | "
-                    f"{t['w']:<4} | "
-                    f"{t['d']:<4} | "
-                    f"{t['l']:<4} | "
-                    f"{t['kf']:<5} | "
-                    f"{t['ka']:<5} | "
-                    f"{t['kdr']:.3f}\n"
+                embed_a.add_field(
+                    name=f"{i}. {t['team']} ({t['abbr']})",
+                    value=(
+                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
+                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
+                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                        f"KDR: {t['kdr']:.2f}"
+                    ),
+                    inline=False
                 )
 
-            text_a += "```"
-
-            # Build plain text leaderboard for Group B
-            text_b = "SKPL Standings — Group B\n```\n"
-            text_b += f"{'Rank':<4} | {'Team':<12} | {'PTS':<4} | {'GP':<4} | {'W':<4} | {'D':<4} | {'L':<4} | {'KF':<5} | {'KA':<5} | {'KDR'}\n"
+            # Build embed for Group B
+            embed_b = discord.Embed(
+                title="🏆 SKPL Standings — Group B",
+                color=0xff8800
+            )
 
             for i, t in enumerate(group_b, 1):
-                text_b += (
-                    f"{i:<4} | "
-                    f"{t['team'][:12]:<12} | "
-                    f"{t['pts']:<4} | "
-                    f"{t['gp']:<4} | "
-                    f"{t['w']:<4} | "
-                    f"{t['d']:<4} | "
-                    f"{t['l']:<4} | "
-                    f"{t['kf']:<5} | "
-                    f"{t['ka']:<5} | "
-                    f"{t['kdr']:.3f}\n"
+                embed_b.add_field(
+                    name=f"{i}. {t['team']} ({t['abbr']})",
+                    value=(
+                        f"**PTS:** {t['pts']} | **PPG:** {t['ppg']:.2f}\n"
+                        f"GP: {t['gp']} | W: {t['w']} | D: {t['d']} | L: {t['l']}\n"
+                        f"Kills: {t['kf']} For / {t['ka']} Against\n"
+                        f"KDR: {t['kdr']:.2f}"
+                    ),
+                    inline=False
                 )
 
-            text_b += "```"
-
-            # Safe sending
-            await send_long(ctx, text_a)
-            await send_long(ctx, text_b)
+            await ctx.send(embed=embed_a)
+            await ctx.send(embed=embed_b)
 
     except Exception as e:
         print(f"❌ Error in standings command: {e}")
