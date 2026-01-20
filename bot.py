@@ -122,7 +122,7 @@ async def help_command(ctx, command_name=None):
     # Fun
     embed.add_field(
         name="🎭 Fun",
-        value="`WHOSYOURDADDY`, `moosecite`",
+        value="`WHOSYOURDADDY`, `moosecite`,`:0`",
         inline=False
     )
 
