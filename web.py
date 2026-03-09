@@ -33,7 +33,7 @@ if __name__ == "__main__":
     bot_thread.start()
 
     # Give bot time to start
-    time.sleep(3)
+    time.sleep(5)
 
     # Start Flask ONCE
     app.run(
@@ -43,4 +43,12 @@ if __name__ == "__main__":
         use_reloader=False
     )
 
+bot_started = False
+
+def run_bot():
+    global bot_started
+    if bot_started:
+        return
+    bot_started = True
+    asyncio.run(bot.start(bot_token))
 
