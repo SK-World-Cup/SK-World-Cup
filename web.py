@@ -1,4 +1,3 @@
-# web.py
 from flask import Flask
 import os
 import asyncio
@@ -33,7 +32,7 @@ if __name__ == "__main__":
     bot_thread = threading.Thread(target=run_bot, daemon=True)
     bot_thread.start()
 
-    # Give bot time to connect
+    # Give bot time to start
     time.sleep(3)
 
     # Start Flask ONCE
@@ -43,4 +42,5 @@ if __name__ == "__main__":
         debug=False,
         use_reloader=False
     )
+
 
