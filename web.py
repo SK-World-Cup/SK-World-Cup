@@ -1,8 +1,6 @@
 from flask import Flask
 import os
 import asyncio
-import threading
-import time
 
 print("🤖 Importing bot module...")
 from bot import bot
@@ -14,41 +12,33 @@ if not bot_token:
     print("❌ BOT_TOKEN missing")
     exit(1)
 
-@app.route('/')
+@app.route("/")
 def home():
     return "Discord Bot is running! 🤖"
 
-@app.route('/health')
+@app.route("/health")
 def health():
     return {"status": "healthy"}
 
-def run_bot():
-    asyncio.run(bot.start(bot_token))
+async def main():
+    # Start the Discord bot
+    bot_task = asyncio.create_task(bot.start(bot_token))
+
+    # Start Flask in a separate thread
+    from threading import Thread
+    def run_flask():
+        print(f"🌐 Starting Flask on port {os.getenv('PORT', 10000)}")
+        app.run(
+            host="0.0.0.0",
+            port=int(os.getenv("PORT", 10000)),
+            debug=False,
+            use_reloader=False
+        )
+
+    flask_thread = Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+
+    await bot_task
 
 if __name__ == "__main__":
-    print(f"🌐 Starting Flask on port {os.getenv('PORT', 10000)}")
-
-    # Start bot ONCE
-    bot_thread = threading.Thread(target=run_bot, daemon=True)
-    bot_thread.start()
-
-    # Give bot time to start
-    time.sleep(5)
-
-    # Start Flask ONCE
-    app.run(
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", 10000)),
-        debug=False,
-        use_reloader=False
-    )
-
-bot_started = False
-
-def run_bot():
-    global bot_started
-    if bot_started:
-        return
-    bot_started = True
-    asyncio.run(bot.start(bot_token))
-
+    asyncio.run(main())
