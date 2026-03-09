@@ -4107,17 +4107,3 @@ async def on_message(message):
     # 3. Allow commands to run normally
     # ============================================================
     await bot.process_commands(message)
-
-# === MAIN EXECUTION ===
-if __name__ == "__main__":
-    bot_token = os.getenv("BOT_TOKEN", "")
-    if not bot_token:
-        print("❌ BOT_TOKEN missing")
-        exit(1)
-
-    print("🤖 Starting Discord bot...")
-    bot.run(bot_token)
-
-# This allows the file to be imported without running the bot
-if __name__ == "__main__":
-    main()
