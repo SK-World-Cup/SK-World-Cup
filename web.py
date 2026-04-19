@@ -11,15 +11,22 @@ if not bot_token:
 
 # Lifespan handles startup/shutdown cleanly
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(app):
     print("🚀 Starting Discord bot...")
-    bot_task = asyncio.create_task(bot.start(bot_token))
-    
-    yield  # app runs here
-    
+
+    async def run_bot():
+        try:
+            await bot.start(bot_token)
+        except Exception as e:
+            print(f"❌ BOT CRASHED: {e}")
+
+    task = asyncio.create_task(run_bot())
+
+    yield
+
     print("🛑 Shutting down bot...")
     await bot.close()
-    bot_task.cancel()
+    task.cancel()
 
 app = FastAPI(lifespan=lifespan)
 
