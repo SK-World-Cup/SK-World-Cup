@@ -1,44 +1,32 @@
-from flask import Flask
 import os
 import asyncio
+from fastapi import FastAPI
+from contextlib import asynccontextmanager
 
-print("🤖 Importing bot module...")
 from bot import bot
-
-app = Flask(__name__)
 
 bot_token = os.getenv("BOT_TOKEN")
 if not bot_token:
-    print("❌ BOT_TOKEN missing")
-    exit(1)
+    raise RuntimeError("BOT_TOKEN missing")
 
-@app.route("/")
-def home():
-    return "Discord Bot is running! 🤖"
-
-@app.route("/health")
-def health():
-    return {"status": "healthy"}
-
-async def main():
-    # Start the Discord bot
+# Lifespan handles startup/shutdown cleanly
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Starting Discord bot...")
     bot_task = asyncio.create_task(bot.start(bot_token))
+    
+    yield  # app runs here
+    
+    print("🛑 Shutting down bot...")
+    await bot.close()
+    bot_task.cancel()
 
-    # Start Flask in a separate thread
-    from threading import Thread
-    def run_flask():
-        print(f"🌐 Starting Flask on port {os.getenv('PORT', 10000)}")
-        app.run(
-            host="0.0.0.0",
-            port=int(os.getenv("PORT", 10000)),
-            debug=False,
-            use_reloader=False
-        )
+app = FastAPI(lifespan=lifespan)
 
-    flask_thread = Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+@app.get("/")
+async def home():
+    return {"status": "running"}
 
-    await bot_task
-
-if __name__ == "__main__":
-    asyncio.run(main())
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
